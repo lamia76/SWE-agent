@@ -1,0 +1,74 @@
+tools:
+  openviking_read:
+    signature: "openviking_read <uri> [<level>]"
+    docstring: "Read content from OpenViking resources at different levels (abstract, overview, or full content)."
+    arguments:
+      - name: uri
+        type: string
+        description: "The Viking file's URI to read from (e.g., viking://resources/path/123.md)"
+        required: true
+      - name: level
+        type: string
+        description: "Reading level: 'abstract' (L0 summary), 'overview' (L1 overview), or 'read' (L2 full content)"
+        required: false
+        enum: ["abstract", "overview", "read"]
+  openviking_list:
+    signature: "openviking_list <uri> [<recursive>]"
+    docstring: "List resources in an OpenViking path."
+    arguments:
+      - name: uri
+        type: string
+        description: "The parent Viking URI to list (e.g., viking://resources/)"
+        required: true
+      - name: recursive
+        type: boolean
+        description: "Whether to list recursively"
+        required: false
+  openviking_search:
+    signature: "openviking_search <query> [<target_uri>]"
+    docstring: "Search for resources in OpenViking using a query."
+    arguments:
+      - name: query
+        type: string
+        description: "The search query"
+        required: true
+      - name: target_uri
+        type: string
+        description: "Optional target URI to limit search scope (e.g., viking://resources/)"
+        required: false
+  openviking_grep:
+    signature: "openviking_grep <uri> <pattern> [<case_insensitive>]"
+    docstring: "Search Viking resources using regex patterns (like grep)."
+    arguments:
+      - name: uri
+        type: string
+        description: "The Viking URI to search within (e.g., viking://resources/path/)"
+        required: true
+      - name: pattern
+        type: string
+        description: "Regex pattern to search for"
+        required: true
+      - name: case_insensitive
+        type: boolean
+        description: "Case-insensitive search"
+        required: false
+  openviking_glob:
+    signature: "openviking_glob <pattern> [<uri>]"
+    docstring: "Find Viking resources using glob patterns (like **/*.md, *.py)."
+    arguments:
+      - name: pattern
+        type: string
+        description: "Glob pattern to match (e.g., **/*.md, *.py, src/**/*.js)"
+        required: true
+      - name: uri
+        type: string
+        description: "The Viking URI to search within (e.g., viking://resources/path/)"
+        required: false
+  user_memory_search:
+    signature: "user_memory_search <query>"
+    docstring: "Search for user memories in OpenViking using a query."
+    arguments:
+      - name: query
+        type: string
+        description: "The search query"
+        required: true

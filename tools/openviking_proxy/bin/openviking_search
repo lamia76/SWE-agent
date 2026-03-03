@@ -1,0 +1,26 @@
+#!/usr/bin/env python3
+"""Search for resources in OpenViking."""
+import os
+import sys
+
+_bundle_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(_bundle_dir, "lib"))
+from ov_proxy_client import call_proxy
+
+
+def main():
+    query = sys.argv[1] if len(sys.argv) > 1 else ""
+    target_uri = sys.argv[2] if len(sys.argv) > 2 else None
+    if not query:
+        print("Error: query is required")
+        sys.exit(1)
+    params = {"query": query}
+    if target_uri:
+        params["target_uri"] = target_uri
+    result = call_proxy("openviking_search", params)
+    print(result)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
