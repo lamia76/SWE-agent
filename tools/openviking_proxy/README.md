@@ -89,3 +89,11 @@ sweagent run \
 ## OpenViking 配置
 
 Proxy Server 使用 VikingClient，会读取 `~/.vikingbot/config.json`。请确保 OpenViking 已正确配置（local 或 remote 模式）。
+
+## 第三方 API 与 TLS 证书
+
+使用自签名或私有 CA 证书时，详见 [RUN_WITH_SSL_CERT.md](RUN_WITH_SSL_CERT.md)。
+
+- `ov.conf.third_party_api`：第三方 API 示例配置（embedding、vlm、rerank 等）
+- `tls-ca-bundle.pem`：放入本目录后，`run_with_ssl.sh` 会自动加载
+- 快速启动：`./run_with_ssl.sh`
