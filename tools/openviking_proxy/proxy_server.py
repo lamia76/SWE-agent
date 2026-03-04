@@ -201,6 +201,26 @@ class OpenVikingProxy:
                     lines.append(f"{mu}")
                 return "\n".join(lines)
 
+            elif tool == "openviking_add_resource":
+                path = params.get("path", "")
+                reason = params.get("reason", "")
+                target = params.get("target")
+                wait = params.get("wait", False)
+                if not path:
+                    return "Error: path is required for openviking_add_resource"
+                try:
+                    result = await client.add_resource(
+                        local_path=path,
+                        desc=reason,
+                        target_path=target,
+                        wait=wait,
+                    )
+                    if result is None:
+                        return "Add resource completed (no result returned)."
+                    return str(result)
+                except Exception as e:
+                    return f"Error adding resource: {e}"
+
             elif tool == "user_memory_search":
                 query = params.get("query", "")
                 results = await client.search_user_memory(query)

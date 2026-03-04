@@ -1,6 +1,30 @@
 # 对齐 OpenViking 目录下 API（openviking_cli/client/base.py、server/routers 及 docs）
-# 参数名与语义以 OpenViking 项目为准，非 tools/openviking 的 ov_* 封装。
+# 参数名与语义以 OpenViking 项目为准。与 tools/openviking 的 ov_index_repo 对应：本 bundle 提供 openviking_add_resource。
 tools:
+  openviking_add_resource:
+    signature: "openviking_add_resource <path> [<reason>] [<target>] [<wait>]"
+    docstring: "将资源添加进 OpenViking 并建立索引（与 tools/openviking 的 ov_index_repo 等价）。path 可为 URL（如 https://github.com/owner/repo）或主机可访问的路径。索引完成后方可使用 openviking_search/openviking_read。"
+    arguments:
+      - name: path
+        type: string
+        description: "资源路径或 URL（如 https://github.com/owner/repo 或主机上的 /path/to/repo）"
+        required: true
+        argument_format: "{{value}}"
+      - name: reason
+        type: string
+        description: "添加原因/描述，可选"
+        required: false
+        argument_format: "{{value}}"
+      - name: target
+        type: string
+        description: "目标 Viking URI（如 viking://resources/），可选"
+        required: false
+        argument_format: "{{value}}"
+      - name: wait
+        type: boolean
+        description: "是否等待处理完成再返回"
+        required: false
+        argument_format: "--wait"
   openviking_read:
     signature: "openviking_read <uri> [<level>]"
     docstring: "读取 OpenViking 资源。对应 content API：abstract(uri) L0、overview(uri) L1、read(uri) L2。level 为 abstract|overview|read。"

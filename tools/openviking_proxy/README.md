@@ -152,8 +152,9 @@ sweagent run \
 
 本 bundle 暴露的工具及参数与 **OpenViking 项目** 一致（非 tools/openviking 的 ov_*）：
 
-| 工具名 | 对应 OpenViking API | 主要参数 |
-|--------|---------------------|----------|
+| 工具名 | 对应 OpenViking API / tools/openviking | 主要参数 |
+|--------|----------------------------------------|----------|
+| `openviking_add_resource` | resources 添加 / **ov_index_repo** | path（URL 或主机路径）, reason, target, wait |
 | `openviking_read` | content/abstract、overview、read | uri, level（abstract\|overview\|read） |
 | `openviking_list` | fs/ls | uri, simple, recursive, node_limit |
 | `openviking_search` | search/find | query, target_uri, limit, score_threshold |
@@ -163,6 +164,7 @@ sweagent run \
 
 ### 工具详解（与 OpenViking 文档一致）
 
+- **openviking_add_resource**：对应 OpenViking `add_resource` / tools/openviking 的 **ov_index_repo**。将 path（URL 或主机可访问路径）加入 OpenViking 并建索引，之后方可 search/read。可选 reason、target（如 viking://resources/）、wait。
 - **openviking_read**：对应 `abstract(uri)` L0、`overview(uri)` L1、`read(uri)` L2。
 - **openviking_list**：对应 `ls(uri, simple, recursive, node_limit)`，默认 uri 为 `viking://resources/`。
 - **openviking_search**：对应 `find(query, target_uri, limit, score_threshold)`，limit 默认 10。
