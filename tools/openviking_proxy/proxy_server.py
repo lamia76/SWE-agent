@@ -13,14 +13,28 @@ Usage:
      OPENVIKING_PROXY_URL=http://host.docker.internal:8765  (Docker Desktop)
      or
      OPENVIKING_PROXY_URL=http://172.17.0.1:8765  (Linux Docker host IP)
+
+Config: OpenViking SDK (used by VikingClient) reads OPENVIKING_CONFIG_FILE.
+If unset, we set it to this bundle's ov.conf.third_party_api so it behaves like
+tools/openviking loading ov.conf (same mechanism: env var -> get_openviking_config()).
 """
 import argparse
 import asyncio
 import json
+import os
 import sys
+from pathlib import Path
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from threading import Thread
 
+# 与 tools/openviking 一致：让 OpenViking SDK 通过 OPENVIKING_CONFIG_FILE 加载配置。
+# SDK 在 get_openviking_config() 中读取该环境变量（openviking_cli.utils.config），
+# 若未设置则在此处默认指向本 bundle 的 ov.conf.third_party_api。
+if not os.environ.get("OPENVIKING_CONFIG_FILE"):
+    _bundle_dir = Path(__file__).resolve().parent
+    _ov_conf = _bundle_dir / "ov.conf.third_party_api"
+    if _ov_conf.exists():
+        os.environ["OPENVIKING_CONFIG_FILE"] = str(_ov_conf)
 
 # Default agent_id for SWE-agent sessions (no session context in SWE-agent)
 DEFAULT_AGENT_ID = "swe-agent"

@@ -41,7 +41,7 @@ tools:
         required: false
         argument_format: "--node_limit {{value}}"
   openviking_search:
-    signature: "openviking_search <query> [<target_uri>] [--limit LIMIT] [--score_threshold SCORE]"
+    signature: "openviking_search <query> [<target_uri>] [<limit>] [<score_threshold>]"
     docstring: "语义搜索。对应 search/find API：query、target_uri、limit（默认10）、score_threshold。"
     arguments:
       - name: query
