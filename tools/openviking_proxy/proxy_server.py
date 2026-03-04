@@ -55,10 +55,40 @@ class OpenVikingProxy:
                 ) from e
         return self._client
 
+    def _format_find_result(self, result, query: str = "", target_uri: str = "") -> str:
+        """Format OpenViking find result (FindResult or dict) as string."""
+        if result is None:
+            return "No results found."
+        # Handle dict (from VikingClient.search)
+        if isinstance(result, dict):
+            resources = result.get("resources", [])
+            memories = result.get("memories", [])
+            skills = result.get("skills", [])
+        else:
+            resources = getattr(result, "resources", []) or []
+            memories = getattr(result, "memories", []) or []
+            skills = getattr(result, "skills", []) or []
+        lines = []
+        for i, r in enumerate(resources, 1):
+            uri = r.get("uri", getattr(r, "uri", ""))
+            score = r.get("score", getattr(r, "score", 0))
+            abstract = (r.get("abstract", getattr(r, "abstract", "")) or "")[:200]
+            lines.append(f"{i}. {uri} (score={score:.3f}) {abstract}")
+        for i, m in enumerate(memories, len(lines) + 1):
+            uri = m.get("uri", getattr(m, "uri", ""))
+            lines.append(f"{i}. [memory] {uri}")
+        for i, s in enumerate(skills, len(lines) + 1):
+            uri = s.get("uri", getattr(s, "uri", ""))
+            lines.append(f"{i}. [skill] {uri}")
+        if not lines:
+            return "No results found."
+        return "\n".join(lines)
+
     async def execute(self, tool: str, params: dict) -> str:
-        """Execute an OpenViking tool and return the result string."""
+        """Execute an OpenViking tool; parameters align with OpenViking directory API."""
         client = await self._get_client()
         params = params or {}
+        raw = getattr(client, "client", None)  # underlying openviking client
 
         try:
             if tool == "openviking_read":
@@ -67,44 +97,60 @@ class OpenVikingProxy:
                 return await client.read_content(uri, level=level) or ""
 
             elif tool == "openviking_list":
-                uri = params.get("uri", "viking://resources/")
+                uri = params.get("uri") or "viking://resources/"
                 recursive = params.get("recursive", False)
-                entries = await client.list_resources(path=uri, recursive=recursive)
+                simple = params.get("simple", False)
+                node_limit = params.get("node_limit", 1000)
+                if raw and hasattr(raw, "ls"):
+                    entries = await raw.ls(
+                        uri,
+                        simple=simple,
+                        recursive=recursive,
+                        node_limit=node_limit,
+                    )
+                else:
+                    entries = await client.list_resources(path=uri, recursive=recursive)
                 if not entries:
                     return f"No resources found at {uri}"
-                result = []
-                for entry in entries:
+                out = []
+                for entry in entries if isinstance(entries, list) else []:
                     item = {
                         "name": entry.get("name", ""),
                         "size": entry.get("size", 0),
                         "uri": entry.get("uri", ""),
                         "isDir": entry.get("isDir", False),
                     }
-                    result.append(str(item))
-                return "\n".join(result)
+                    out.append(str(item))
+                return "\n".join(out) if out else f"No resources found at {uri}"
 
             elif tool == "openviking_search":
                 query = params.get("query", "")
-                target_uri = params.get("target_uri")
-                result = await client.search(query, target_uri=target_uri or "")
-                if not result:
-                    return f"No results found for query: {query}"
-                # Format search result
-                lines = []
-                for key in ("resources", "memories", "skills"):
-                    items = result.get(key, [])
-                    if items:
-                        for i, r in enumerate(items, 1):
-                            lines.append(f"{i}. {r}")
-                if lines:
-                    return "\n".join(lines)
-                return str(result)
+                target_uri = params.get("target_uri") or ""
+                limit = params.get("limit", 10)
+                score_threshold = params.get("score_threshold")
+                if raw and hasattr(raw, "find"):
+                    result = await raw.find(
+                        query,
+                        target_uri=target_uri,
+                        limit=limit,
+                        score_threshold=score_threshold,
+                    )
+                else:
+                    result = await client.search(query, target_uri=target_uri or "")
+                return self._format_find_result(result, query=query, target_uri=target_uri)
 
             elif tool == "openviking_grep":
                 uri = params.get("uri", "")
                 pattern = params.get("pattern", "")
                 case_insensitive = params.get("case_insensitive", False)
-                result = await client.grep(uri, pattern, case_insensitive=case_insensitive)
+                node_limit = params.get("node_limit")
+                if raw and hasattr(raw, "grep"):
+                    kwargs = {"uri": uri, "pattern": pattern, "case_insensitive": case_insensitive}
+                    if node_limit is not None:
+                        kwargs["node_limit"] = node_limit
+                    result = await raw.grep(**kwargs)
+                else:
+                    result = await client.grep(uri, pattern, case_insensitive=case_insensitive)
                 if isinstance(result, dict):
                     matches = result.get("result", {}).get("matches", [])
                     count = result.get("result", {}).get("count", 0)

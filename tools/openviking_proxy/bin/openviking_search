@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Search for resources in OpenViking."""
+"""Semantic search. Params align with OpenViking search/find: query, target_uri, limit, score_threshold."""
+import argparse
 import os
 import sys
 
@@ -9,14 +10,19 @@ from ov_proxy_client import call_proxy
 
 
 def main():
-    query = sys.argv[1] if len(sys.argv) > 1 else ""
-    target_uri = sys.argv[2] if len(sys.argv) > 2 else None
-    if not query:
-        print("Error: query is required")
-        sys.exit(1)
-    params = {"query": query}
-    if target_uri:
-        params["target_uri"] = target_uri
+    ap = argparse.ArgumentParser(description="OpenViking find (semantic search).")
+    ap.add_argument("query", help="Search query")
+    ap.add_argument("target_uri", nargs="?", default="", help="Scope (e.g. viking://resources/)")
+    ap.add_argument("--limit", type=int, default=None, help="Max results (default 10)")
+    ap.add_argument("--score_threshold", type=float, default=None, help="Min score 0.0-1.0")
+    args = ap.parse_args()
+    params = {"query": args.query}
+    if args.target_uri:
+        params["target_uri"] = args.target_uri
+    if args.limit is not None:
+        params["limit"] = args.limit
+    if args.score_threshold is not None:
+        params["score_threshold"] = args.score_threshold
     result = call_proxy("openviking_search", params)
     print(result)
     return 0

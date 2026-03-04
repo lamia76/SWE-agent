@@ -1,74 +1,113 @@
+# 对齐 OpenViking 目录下 API（openviking_cli/client/base.py、server/routers 及 docs）
+# 参数名与语义以 OpenViking 项目为准，非 tools/openviking 的 ov_* 封装。
 tools:
   openviking_read:
     signature: "openviking_read <uri> [<level>]"
-    docstring: "Read content from OpenViking resources at different levels (abstract, overview, or full content)."
+    docstring: "读取 OpenViking 资源。对应 content API：abstract(uri) L0、overview(uri) L1、read(uri) L2。level 为 abstract|overview|read。"
     arguments:
       - name: uri
         type: string
-        description: "The Viking file's URI to read from (e.g., viking://resources/path/123.md)"
+        description: "Viking URI（必填）"
         required: true
+        argument_format: "{{value}}"
       - name: level
         type: string
-        description: "Reading level: 'abstract' (L0 summary), 'overview' (L1 overview), or 'read' (L2 full content)"
+        description: "读取层级：abstract（L0）、overview（L1）、read（L2），默认 abstract"
         required: false
+        argument_format: "{{value}}"
         enum: ["abstract", "overview", "read"]
   openviking_list:
-    signature: "openviking_list <uri> [<recursive>]"
-    docstring: "List resources in an OpenViking path."
+    signature: "openviking_list [<uri>] [<simple>] [<recursive>] [<node_limit>]"
+    docstring: "列出目录内容。对应 fs/ls API：uri、simple、recursive、node_limit。"
     arguments:
       - name: uri
         type: string
-        description: "The parent Viking URI to list (e.g., viking://resources/)"
-        required: true
+        description: "Viking URI，默认 viking://resources/"
+        required: false
+        argument_format: "{{value}}"
+      - name: simple
+        type: boolean
+        description: "仅返回相对路径列表"
+        required: false
+        argument_format: "--simple"
       - name: recursive
         type: boolean
-        description: "Whether to list recursively"
+        description: "递归列出所有子目录"
         required: false
+        argument_format: "--recursive"
+      - name: node_limit
+        type: integer
+        description: "最大列出节点数，默认 1000"
+        required: false
+        argument_format: "--node_limit {{value}}"
   openviking_search:
-    signature: "openviking_search <query> [<target_uri>]"
-    docstring: "Search for resources in OpenViking using a query."
+    signature: "openviking_search <query> [<target_uri>] [--limit LIMIT] [--score_threshold SCORE]"
+    docstring: "语义搜索。对应 search/find API：query、target_uri、limit（默认10）、score_threshold。"
     arguments:
       - name: query
         type: string
-        description: "The search query"
+        description: "搜索查询字符串（必填）"
         required: true
+        argument_format: "{{value}}"
       - name: target_uri
         type: string
-        description: "Optional target URI to limit search scope (e.g., viking://resources/)"
+        description: "限定搜索范围，默认空表示全局"
         required: false
+        argument_format: "{{value}}"
+      - name: limit
+        type: integer
+        description: "最大返回结果数，默认 10"
+        required: false
+        argument_format: "--limit {{value}}"
+      - name: score_threshold
+        type: float
+        description: "最低相关性分数阈值 (0.0-1.0)"
+        required: false
+        argument_format: "--score_threshold {{value}}"
   openviking_grep:
-    signature: "openviking_grep <uri> <pattern> [<case_insensitive>]"
-    docstring: "Search Viking resources using regex patterns (like grep)."
+    signature: "openviking_grep <uri> <pattern> [<case_insensitive>] [<node_limit>]"
+    docstring: "按正则搜索内容。对应 search/grep API：uri、pattern、case_insensitive、node_limit。"
     arguments:
       - name: uri
         type: string
-        description: "The Viking URI to search within (e.g., viking://resources/path/)"
+        description: "要在其中搜索的 Viking URI（必填）"
         required: true
+        argument_format: "{{value}}"
       - name: pattern
         type: string
-        description: "Regex pattern to search for"
+        description: "正则表达式模式（必填）"
         required: true
+        argument_format: "{{value}}"
       - name: case_insensitive
         type: boolean
-        description: "Case-insensitive search"
+        description: "是否忽略大小写"
         required: false
+        argument_format: "--case-insensitive"
+      - name: node_limit
+        type: integer
+        description: "最大匹配节点数"
+        required: false
+        argument_format: "--node_limit {{value}}"
   openviking_glob:
     signature: "openviking_glob <pattern> [<uri>]"
-    docstring: "Find Viking resources using glob patterns (like **/*.md, *.py)."
+    docstring: "按 glob 模式匹配文件。对应 search/glob API：pattern、uri（默认 viking://）。"
     arguments:
       - name: pattern
         type: string
-        description: "Glob pattern to match (e.g., **/*.md, *.py, src/**/*.js)"
+        description: "Glob 模式（如 **/*.py、**/test_*.py）（必填）"
         required: true
+        argument_format: "{{value}}"
       - name: uri
         type: string
-        description: "The Viking URI to search within (e.g., viking://resources/path/)"
+        description: "搜索范围 URI，默认 viking://"
         required: false
+        argument_format: "{{value}}"
   user_memory_search:
     signature: "user_memory_search <query>"
-    docstring: "Search for user memories in OpenViking using a query."
+    docstring: "在用户记忆 viking://user/.../memories/ 中语义搜索。"
     arguments:
       - name: query
         type: string
-        description: "The search query"
+        description: "搜索查询"
         required: true
+        argument_format: "{{value}}"
