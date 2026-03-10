@@ -1,0 +1,16 @@
+#!/bin/bash
+# Wrapper so "which ov_glob" finds this; delegates to openviking CLI
+bundle_dir="$(cd "$(dirname "$0")/.." && pwd)"
+export PATH="$(python3 -c "import sys; print(sys.prefix)")/bin:$PATH"
+[ -z "$OPENVIKING_CONFIG_FILE" ] && [ -f "$bundle_dir/ov.conf" ] && export OPENVIKING_CONFIG_FILE="$bundle_dir/ov.conf"
+[ -z "$OPENVIKING_CONFIG_FILE" ] && [ -f "$bundle_dir/ov.conf.third_party_api" ] && export OPENVIKING_CONFIG_FILE="$bundle_dir/ov.conf.third_party_api"
+path_without_us="${PATH#*:}"
+real_ov=$(PATH="$path_without_us" command -v ov_glob 2>/dev/null)
+[ -n "$real_ov" ] && exec "$real_ov" "$@"
+if command -v ov &>/dev/null; then
+  exec ov glob "$@"
+elif command -v openviking &>/dev/null; then
+  exec openviking glob "$@"
+else
+  exec python3 -m openviking glob "$@"
+fi

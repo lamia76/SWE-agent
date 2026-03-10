@@ -36,6 +36,12 @@ else
 fi
 echo ""
 
+# 确保 pip 安装的 ov_* 或 openviking 所在目录在 PATH 中，便于后续 which 检查与调用
+PYTHON_BIN=$(python3 -c "import sys; print(sys.prefix)")/bin
+export PATH="$PYTHON_BIN:$PATH"
+echo "✓ PATH includes $PYTHON_BIN"
+echo ""
+
 # 使用本 bundle 的配置文件（与 tools/openviking 一致：本地 CLI 读 ov.conf）
 CONF_FILE="${bundle_dir}/ov.conf.third_party_api"
 if [ -f "${bundle_dir}/ov.conf" ]; then

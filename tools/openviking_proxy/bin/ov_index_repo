@@ -1,0 +1,13 @@
+#!/bin/bash
+# Wrapper so "which ov_index_repo" finds this; delegates to openviking CLI (ov or openviking add-resource)
+bundle_dir="$(cd "$(dirname "$0")/.." && pwd)"
+export PATH="$(python3 -c "import sys; print(sys.prefix)")/bin:$PATH"
+[ -z "$OPENVIKING_CONFIG_FILE" ] && [ -f "$bundle_dir/ov.conf" ] && export OPENVIKING_CONFIG_FILE="$bundle_dir/ov.conf"
+[ -z "$OPENVIKING_CONFIG_FILE" ] && [ -f "$bundle_dir/ov.conf.third_party_api" ] && export OPENVIKING_CONFIG_FILE="$bundle_dir/ov.conf.third_party_api"
+if command -v ov &>/dev/null; then
+  exec ov add-resource "$@"
+elif command -v openviking &>/dev/null; then
+  exec openviking add-resource "$@"
+else
+  exec python3 -m openviking add-resource "$@"
+fi

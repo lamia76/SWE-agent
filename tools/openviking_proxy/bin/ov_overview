@@ -1,0 +1,12 @@
+#!/bin/bash
+bundle_dir="$(cd "$(dirname "$0")/.." && pwd)"
+export PATH="$(python3 -c "import sys; print(sys.prefix)")/bin:$PATH"
+[ -z "$OPENVIKING_CONFIG_FILE" ] && [ -f "$bundle_dir/ov.conf" ] && export OPENVIKING_CONFIG_FILE="$bundle_dir/ov.conf"
+[ -z "$OPENVIKING_CONFIG_FILE" ] && [ -f "$bundle_dir/ov.conf.third_party_api" ] && export OPENVIKING_CONFIG_FILE="$bundle_dir/ov.conf.third_party_api"
+if command -v ov &>/dev/null; then
+  exec ov overview "$@"
+elif command -v openviking &>/dev/null; then
+  exec openviking overview "$@"
+else
+  exec python3 -m openviking overview "$@"
+fi
