@@ -1,38 +1,34 @@
 #!/bin/bash
-# OpenViking Proxy Bundle 安装脚本（主机侧）
-# 与 tools/openviking 的安装方式对齐：检查环境、安装依赖、设置配置文件路径。
-# 主机上运行此脚本后，可启动 proxy_server.py，供 SWE-agent 容器通过 HTTP 调用 OpenViking。
+# OpenViking Proxy Bundle：与 tools/openviking 相同的调用方式
+# 在容器内安装 OpenViking CLI（ov_*），通过本 bundle 的 ov.conf 使用 OpenViking 服务（本地向量库 + 远程 embedding 等）
 
 set -e
 
 echo "=========================================="
-echo "OpenViking Proxy Bundle (Host) Installation"
+echo "OpenViking (local CLI) Installation"
 echo "=========================================="
 echo ""
 
-# 解析脚本所在目录（bundle 根目录）
+# 脚本所在目录即 bundle 根目录（容器内为 /root/tools/openviking_proxy）
 bundle_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 cd "$bundle_dir"
 
-# 检查 Python
 if ! command -v python3 &>/dev/null && ! command -v python &>/dev/null; then
     echo "Error: python3 or python not found. Please install Python 3.8+."
     exit 1
 fi
-PYTHON=${PYTHON:-$(command -v python3 2>/dev/null || command -v python)}
-echo "✓ Python: $($PYTHON --version 2>/dev/null || true)"
+echo "✓ Python: $(python3 --version 2>/dev/null || python --version 2>/dev/null)"
 
-# 检查 pip
-if ! $PYTHON -m pip --version &>/dev/null; then
-    echo "Error: pip not found. Please install pip."
+if ! python3 -m pip --version &>/dev/null; then
+    echo "Error: pip not found."
     exit 1
 fi
 echo "✓ pip available"
 echo ""
 
-# 安装 OpenViking SDK（Proxy 依赖 VikingClient，VikingClient 依赖 openviking）
 echo "Installing OpenViking SDK..."
-if $PYTHON -m pip install --upgrade openviking; then
+pip install --upgrade openviking
+if [ $? -eq 0 ]; then
     echo "✓ OpenViking SDK installed"
 else
     echo "✗ Failed to install OpenViking SDK"
@@ -40,41 +36,42 @@ else
 fi
 echo ""
 
-# VikingClient 来自 OpenViking/bot（vikingbot），二选一：
-# 1) 将 OpenViking/bot 加入 PYTHONPATH（需先有 OpenViking 源码）
-# 2) 在 OpenViking/bot 目录执行 pip install -e .
-echo "VikingClient (for proxy_server.py) is provided by OpenViking/bot:"
-echo "  Option A: export PYTHONPATH=\"/path/to/OpenViking/bot:\$PYTHONPATH\""
-echo "  Option B: cd /path/to/OpenViking/bot && pip install -e ."
-echo ""
-
-# 配置文件：使用本 bundle 内的示例配置
+# 使用本 bundle 的配置文件（与 tools/openviking 一致：本地 CLI 读 ov.conf）
 CONF_FILE="${bundle_dir}/ov.conf.third_party_api"
+if [ -f "${bundle_dir}/ov.conf" ]; then
+    CONF_FILE="${bundle_dir}/ov.conf"
+fi
 if [ -f "$CONF_FILE" ]; then
     export OPENVIKING_CONFIG_FILE="$CONF_FILE"
-    echo "✓ Config file set: OPENVIKING_CONFIG_FILE=$OPENVIKING_CONFIG_FILE"
+    echo "✓ OPENVIKING_CONFIG_FILE=$OPENVIKING_CONFIG_FILE"
 else
-    echo "⚠ Config file not found: $CONF_FILE (set OPENVIKING_CONFIG_FILE manually)"
+    echo "⚠ Config not found: $CONF_FILE (set OPENVIKING_CONFIG_FILE manually)"
 fi
-echo ""
 
-# VikingClient 会读取 ~/.vikingbot/config.json
-VIKINGBOT_DIR="$HOME/.vikingbot"
-if [ ! -d "$VIKINGBOT_DIR" ]; then
-    mkdir -p "$VIKINGBOT_DIR"
-    echo "✓ Created directory: $VIKINGBOT_DIR (you may add config.json for VikingClient)"
+export OPENVIKING_DATA_DIR="${OPENVIKING_DATA_DIR:-./.openviking}"
+if [ ! -d "$OPENVIKING_DATA_DIR" ]; then
+    mkdir -p "$OPENVIKING_DATA_DIR"
+    echo "✓ Created OPENVIKING_DATA_DIR=$OPENVIKING_DATA_DIR"
 else
-    echo "✓ Directory exists: $VIKINGBOT_DIR"
+    echo "✓ OPENVIKING_DATA_DIR=$OPENVIKING_DATA_DIR"
 fi
 echo ""
 
 echo "=========================================="
-echo "Installation Complete (Host)"
+echo "Installation Complete"
 echo "=========================================="
+echo "OpenViking tools (same as tools/openviking):"
+echo "  - ov_index_repo  - Index repository"
+echo "  - ov_wait        - Wait for processing"
+echo "  - ov_find        - Semantic search"
+echo "  - ov_abstract    - Brief summary (L0)"
+echo "  - ov_overview    - Structured overview (L1)"
+echo "  - ov_read        - Full content (L2)"
+echo "  - ov_ls          - List directory"
+echo "  - ov_glob        - Find by pattern"
 echo ""
-echo "Next steps:"
-echo "  1. Ensure VikingClient is available (PYTHONPATH to OpenViking/bot or pip install -e . in bot)"
-echo "  2. Index target repo: openviking add-resource <path-or-url> --wait"
-echo "  3. Start proxy: cd $bundle_dir && python proxy_server.py [--port 8765]"
-echo "  4. In SWE-agent run env, set OPENVIKING_PROXY_URL=http://host.docker.internal:8765 (or host IP)"
+echo "Quick start:"
+echo "  1. ov_index_repo .     # e.g. in /testbed"
+echo "  2. ov_wait"
+echo "  3. ov_find \"your query\""
 echo ""

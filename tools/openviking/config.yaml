@@ -1,4 +1,3 @@
-# 与 tools/openviking 相同的调用方式：使用本地 OpenViking CLI（ov_*），通过 ov.conf 使用 OpenViking 服务
 tools:
   ov_index_repo:
     signature: "ov_index_repo <repo_path>"
@@ -6,7 +5,7 @@ tools:
     arguments:
       - name: repo_path
         type: string
-        description: "仓库的github url（如https://github.com/MiniMax-AI/MiniMax-M2）或当前目录 ."
+        description: "仓库的github url（如https://github.com/MiniMax-AI/MiniMax-M2）"
         required: false
         argument_format: "{{value}}"
 
