@@ -34,7 +34,7 @@ cd SWE-agent/tools/openviking_cli
 ./install.sh
 ```
 
-安装脚本会：安装 OpenViking SDK、设置 `OPENVIKING_CLI_CONFIG_FILE` 指向本目录的 ovcli.conf、可选 TLS 证书、PATH。
+安装脚本会：安装 OpenViking SDK、设置 `OPENVIKING_CLI_CONFIG_FILE` 指向本目录的 ovcli.conf、**若本目录下有 tls-ca-bundle.pem 则自动设置证书环境变量**（RUN_WITH_SSL_CERT 逻辑已合并，证书放同目录即可）、PATH。
 
 ## 启动 OpenViking Server（模型侧）
 
@@ -67,6 +67,10 @@ openviking-server --config "$OPENVIKING_CONFIG_FILE"
 
 - **server**：Server 监听地址，默认 `0.0.0.0:1933`；可按需改 `host`/`port`、`root_api_key`。
 - **embedding / vlm / rerank**：与 tools/openviking/ov.conf 一致，使用本地部署的模型 URL 和 API Key（如 `api_base`、`api_key`、`host`）。
+
+### 证书（HTTPS/自签名 CA）
+
+将 **tls-ca-bundle.pem** 放在本目录下（与 install.sh 同目录），执行 install.sh 后会自动设置 `REQUESTS_CA_BUNDLE`、`SSL_CERT_FILE`；各 bin 脚本运行时也会检测该文件。详见 `RUN_WITH_SSL_CERT.md`。
 
 ## 在 SWE-agent 中使用
 

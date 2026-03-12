@@ -45,14 +45,15 @@ else
 fi
 echo ""
 
-# 证书逻辑与 tools/openviking 一致：若存在 tls-ca-bundle.pem 则设置 CA，便于连 HTTPS Server 或第三方 API
+# RUN_WITH_SSL_CERT 逻辑合并：证书放在本目录下 tls-ca-bundle.pem，install 自动设置（HTTPS/自签名/私有 CA 时使用）
 CA_BUNDLE="${bundle_dir}/tls-ca-bundle.pem"
 if [ -f "$CA_BUNDLE" ]; then
-    export REQUESTS_CA_BUNDLE="$CA_BUNDLE"
-    export SSL_CERT_FILE="$CA_BUNDLE"
-    echo "✓ TLS certificate set: $CA_BUNDLE"
+    CA_ABS=$(cd "$(dirname "$CA_BUNDLE")" && pwd)/$(basename "$CA_BUNDLE")
+    export REQUESTS_CA_BUNDLE="$CA_ABS"
+    export SSL_CERT_FILE="$CA_ABS"
+    echo "✓ TLS certificate (from same dir): $CA_ABS"
 else
-    echo "ℹ No tls-ca-bundle.pem in bundle (optional for HTTPS/custom CA)"
+    echo "ℹ No tls-ca-bundle.pem in this dir (optional; put cert here and re-run install if needed for HTTPS/custom CA)"
 fi
 echo ""
 
