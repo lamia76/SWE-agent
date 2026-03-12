@@ -1,7 +1,7 @@
 #!/bin/bash
 bundle_dir="$(cd "$(dirname "$0")/.." && pwd)"
 export PATH="$(python3 -c "import sys; print(sys.prefix)")/bin:$PATH"
-[ -z "$OPENVIKING_CLI_CONFIG_FILE" ] && [ -f "$bundle_dir/ovcli.conf" ] && export OPENVIKING_CLI_CONFIG_FILE="$bundle_dir/ovcli.conf"
+OVCLI="$bundle_dir/ovcli.conf"; [ -f "$OVCLI" ] && export OPENVIKING_CLI_CONFIG_FILE="$OVCLI"
 [ -f "$bundle_dir/tls-ca-bundle.pem" ] && export REQUESTS_CA_BUNDLE="$bundle_dir/tls-ca-bundle.pem" && export SSL_CERT_FILE="$bundle_dir/tls-ca-bundle.pem"
 if command -v ov &>/dev/null; then
   exec ov ls "$@"

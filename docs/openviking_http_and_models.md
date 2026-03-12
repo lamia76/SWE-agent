@@ -21,7 +21,7 @@
 Agent (SWE) 
   → 执行 ov_index_repo / ov_find / ov_read 等
   → bin 里脚本调 ov/openviking 命令
-  → ov 读 ovcli.conf，得到 Server 的 url（如 http://141.61.16.3:1933）
+  → ov 读 ovcli.conf，得到 Server 的 url（与 ov.conf server.port 一致，如 http://141.61.16.3:8090）
   → 发 HTTP 到 OpenViking Server
        POST /api/v1/resources          (添加资源)
        POST /api/v1/system/wait        (等待处理)

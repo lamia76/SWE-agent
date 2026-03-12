@@ -35,11 +35,11 @@ else
 fi
 echo ""
 
-# CLI 连 Server 使用 ovcli.conf（与 tools/openviking 的 ov.conf 对应：一个管嵌入式，一个管连接）
+# 仅使用本目录下的 ovcli.conf 作为 API 连接配置（不跨目录）
 CLI_CONF="${bundle_dir}/ovcli.conf"
 if [ -f "$CLI_CONF" ]; then
     export OPENVIKING_CLI_CONFIG_FILE="$CLI_CONF"
-    echo "✓ OPENVIKING_CLI_CONFIG_FILE=$OPENVIKING_CLI_CONFIG_FILE"
+    echo "✓ OPENVIKING_CLI_CONFIG_FILE=$CLI_CONF"
 else
     echo "⚠ ovcli.conf not found: $CLI_CONF (set OPENVIKING_CLI_CONFIG_FILE manually)"
 fi
@@ -76,5 +76,5 @@ echo "  - ov_read        - ov read (L2)"
 echo "  - ov_ls          - ov ls"
 echo "  - ov_glob        - ov glob"
 echo ""
-echo "Prerequisite: start OpenViking Server (openviking-server) and set ovcli.conf url/api_key."
+echo "Prerequisite: start OpenViking Server. Edit ovcli.conf in this directory to set url and api_key."
 echo ""
