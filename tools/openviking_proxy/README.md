@@ -58,10 +58,6 @@
 - **调用方式相同**：都使用本地 `ov_*` 命令 + `ov.conf`，不依赖 HTTP Proxy。
 - **配置与命名**：本 bundle 保留 `openviking_proxy` 目录名，可继续使用本目录下的 `ov.conf` / `ov.conf.third_party_api`；若需与 openviking 完全一致，可改用 `tools/openviking` 并共用其配置。
 
-## 可选：Proxy 与 VikingClient
-
-本目录仍保留 `proxy_server.py` 与 `lib/ov_proxy_client.py`，供在**主机**上单独起 Proxy、由其他客户端通过 HTTP 调用的场景使用。使用本 bundle 的「本地 ov_*」方式时，**不需要**启动 Proxy 或配置 `OPENVIKING_PROXY_URL`。
-
 ## 参考
 
 - 同仓库 [tools/openviking/README.md](../openviking/README.md)

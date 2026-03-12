@@ -1,1 +1,0 @@
-# OpenViking proxy client library

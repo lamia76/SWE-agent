@@ -1,0 +1,21 @@
+#!/bin/bash
+# 将 -k N 转为 --limit N，--score-threshold T 转为 --threshold T（若工具层未转则 CLI 可能用 -n/--node-limit）
+bundle_dir="$(cd "$(dirname "$0")/.." && pwd)"
+export PATH="$(python3 -c "import sys; print(sys.prefix)")/bin:$PATH"
+[ -z "$OPENVIKING_CLI_CONFIG_FILE" ] && [ -f "$bundle_dir/ovcli.conf" ] && export OPENVIKING_CLI_CONFIG_FILE="$bundle_dir/ovcli.conf"
+[ -f "$bundle_dir/tls-ca-bundle.pem" ] && export REQUESTS_CA_BUNDLE="$bundle_dir/tls-ca-bundle.pem" && export SSL_CERT_FILE="$bundle_dir/tls-ca-bundle.pem"
+args=()
+for i in "$@"; do
+  case "$i" in
+  -k) args+=(--limit) ;;
+  --score-threshold) args+=(--threshold) ;;
+  *) args+=("$i") ;;
+  esac
+done
+if command -v ov &>/dev/null; then
+  exec ov find "${args[@]}"
+elif command -v openviking &>/dev/null; then
+  exec openviking find "${args[@]}"
+else
+  exec python3 -m openviking find "${args[@]}"
+fi

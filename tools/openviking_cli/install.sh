@@ -1,0 +1,79 @@
+#!/bin/bash
+# OpenViking CLI Bundle：通过 ov/openviking 命令连接 OpenViking Server
+# API 与证书使用逻辑与 tools/openviking 对齐（配置文件 + 可选 TLS 证书）
+
+set -e
+
+echo "=========================================="
+echo "OpenViking CLI (Server) Installation"
+echo "=========================================="
+echo ""
+
+bundle_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
+cd "$bundle_dir"
+
+if ! command -v python3 &>/dev/null && ! command -v python &>/dev/null; then
+    echo "Error: python3 or python not found. Please install Python 3.8+."
+    exit 1
+fi
+echo "✓ Python: $(python3 --version 2>/dev/null || python --version 2>/dev/null)"
+
+if ! python3 -m pip --version &>/dev/null; then
+    echo "Error: pip not found."
+    exit 1
+fi
+echo "✓ pip available"
+echo ""
+
+echo "Installing OpenViking SDK..."
+pip install --upgrade openviking
+if [ $? -eq 0 ]; then
+    echo "✓ OpenViking SDK installed"
+else
+    echo "✗ Failed to install OpenViking SDK"
+    exit 1
+fi
+echo ""
+
+# CLI 连 Server 使用 ovcli.conf（与 tools/openviking 的 ov.conf 对应：一个管嵌入式，一个管连接）
+CLI_CONF="${bundle_dir}/ovcli.conf"
+if [ -f "$CLI_CONF" ]; then
+    export OPENVIKING_CLI_CONFIG_FILE="$CLI_CONF"
+    echo "✓ OPENVIKING_CLI_CONFIG_FILE=$OPENVIKING_CLI_CONFIG_FILE"
+else
+    echo "⚠ ovcli.conf not found: $CLI_CONF (set OPENVIKING_CLI_CONFIG_FILE manually)"
+fi
+echo ""
+
+# 证书逻辑与 tools/openviking 一致：若存在 tls-ca-bundle.pem 则设置 CA，便于连 HTTPS Server 或第三方 API
+CA_BUNDLE="${bundle_dir}/tls-ca-bundle.pem"
+if [ -f "$CA_BUNDLE" ]; then
+    export REQUESTS_CA_BUNDLE="$CA_BUNDLE"
+    export SSL_CERT_FILE="$CA_BUNDLE"
+    echo "✓ TLS certificate set: $CA_BUNDLE"
+else
+    echo "ℹ No tls-ca-bundle.pem in bundle (optional for HTTPS/custom CA)"
+fi
+echo ""
+
+# 确保 ov 命令在 PATH 中
+PYTHON_BIN=$(python3 -c "import sys; print(sys.prefix)")/bin
+export PATH="$PYTHON_BIN:$PATH"
+echo "✓ PATH includes $PYTHON_BIN"
+echo ""
+
+echo "=========================================="
+echo "Installation Complete"
+echo "=========================================="
+echo "OpenViking CLI tools (connect to Server):"
+echo "  - ov_index_repo  - ov add-resource (index repo)"
+echo "  - ov_wait        - ov system wait"
+echo "  - ov_find        - ov find (semantic search)"
+echo "  - ov_abstract    - ov abstract (L0)"
+echo "  - ov_overview    - ov overview (L1)"
+echo "  - ov_read        - ov read (L2)"
+echo "  - ov_ls          - ov ls"
+echo "  - ov_glob        - ov glob"
+echo ""
+echo "Prerequisite: start OpenViking Server (openviking-server) and set ovcli.conf url/api_key."
+echo ""
