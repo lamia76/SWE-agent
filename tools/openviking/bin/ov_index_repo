@@ -1,0 +1,96 @@
+#!/usr/bin/env python3
+"""
+OpenViking tool: index_repo
+
+Index a repository (directory) into OpenViking for semantic search.
+This tool creates an index and saves the root URI for subsequent operations.
+"""
+
+import argparse
+import sys
+from pathlib import Path
+
+# Add lib directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
+from ov_common import (
+    get_repo_root,
+    new_client,
+    save_root_uri,
+    json_print,
+    json_error,
+    handle_exceptions
+)
+
+
+@handle_exceptions
+def main():
+    parser = argparse.ArgumentParser(
+        description="Index a repository into OpenViking for semantic search",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  ov_index_repo                 # Index current directory
+  ov_index_repo .              # Index current directory (explicit)
+  ov_index_repo /path/to/repo  # Index specific repository
+
+After indexing, use:
+  ov_wait      # Wait for processing to complete (recommended for first run)
+  ov_find      # Search for relevant files
+  ov_abstract  # Get quick summary of a file
+  ov_overview  # Get structured overview of a file
+  ov_read       # Read file content
+        """
+    )
+    
+    parser.add_argument(
+        "repo_path",
+        nargs="?",
+        default=".",
+        help="Path to repository directory (default: current directory)"
+    )
+    
+    args = parser.parse_args()
+    repo_path = Path(args.repo_path).expanduser().resolve()
+    
+    # Check if path exists
+    if not repo_path.exists():
+        json_error(
+            message=f"Repository path does not exist: {repo_path}",
+            hint="Please provide a valid path to a repository",
+            error_type="FileNotFoundError"
+        )
+        sys.exit(1)
+    
+    # Create client
+    client = new_client()
+    
+    try:
+        # Add resource
+        result = client.add_resource(path=str(repo_path))
+        print(result)
+        # Check result
+        if result and "root_uri" in result:
+            root_uri = result["root_uri"]
+            
+            # Save root URI
+            save_root_uri(root_uri)
+            
+            json_print({
+                "root_uri": root_uri,
+                "indexed_path": str(repo_path),
+                "status": "indexed"
+            })
+        else:
+            json_error(
+                message="Failed to index repository",
+                hint="The resource was added but no root_uri was returned",
+                error_type="IndexingError"
+            )
+            sys.exit(1)
+    finally:
+        client.close()
+
+
+if __name__ == "__main__":
+    main()
+同上

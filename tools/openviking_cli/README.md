@@ -45,6 +45,77 @@ cd SWE-agent/tools/openviking_cli
 
 Server 的启动与配置由部署侧自行决定。本 bundle 仅通过 ovcli.conf 的 url/api_key 连接已有 Server。
 
+## 单独测试 openviking_cli 调用方式
+
+不依赖 SWE-agent 运行整个 benchmark，也可以在本地快速验证 CLI 是否可用。
+
+### 前提
+
+- 已有可访问的 OpenViking Server，地址记为 `http://YOUR_OV_SERVER:8090`（或实际端口）
+- 本机可以访问该地址（如有代理，需按部署要求设置 `no_proxy` 等）
+
+### 步骤一：配置 ovcli.conf
+
+在本目录编辑 `ovcli.conf`，确认至少包含：
+
+```toml
+url = "http://YOUR_OV_SERVER:8090"
+api_key = null  # 如需鉴权则改为实际 key
+```
+
+### 步骤二：安装并加载环境
+
+在项目根目录或本目录终端执行：
+
+```bash
+cd SWE-agent/tools/openviking_cli
+./install.sh
+```
+
+该脚本会：
+
+- 安装/升级 OpenViking Python 包
+- 设置 `OPENVIKING_CLI_CONFIG_FILE` 指向本目录的 `ovcli.conf`
+- 将 Python 的 bin 目录加入 `PATH`
+- 若存在 `tls-ca-bundle.pem`，自动设置证书相关环境变量
+
+### 步骤三：用 ov 原生命令测试
+
+安装完成后，直接调用 ov 命令测试链路：
+
+```bash
+# 列出 viking 根目录，验证连通性
+ov ls viking://
+
+# 语义搜索测试
+ov find "hello world" -n 3
+```
+
+如能返回结果，说明 CLI → Server HTTP 调用链路正常。
+
+### 步骤四：用 bundle 封装命令测试
+
+也可以测试本目录提供的封装脚本是否工作正常：
+
+```bash
+cd SWE-agent/tools/openviking_cli
+
+# 索引当前仓库
+./bin/ov_index_repo .
+
+# 等待索引完成
+./bin/ov_wait
+
+# 搜索
+./bin/ov_find "hello world" -k 5
+
+# 查看摘要 / 读取内容（用实际 viking:// 路径替换）
+./bin/ov_abstract viking://path/to/file.py
+./bin/ov_read viking://path/to/file.py --max-chars 16000
+```
+
+如果上述命令均返回正常结果，则可以认为 openviking_cli 工具 bundle 在当前环境下是可用的。
+
 ## 证书（HTTPS/自签名 CA）
 
 将 **tls-ca-bundle.pem** 放在本目录下，install 与各 bin 脚本会自动设置 `REQUESTS_CA_BUNDLE`、`SSL_CERT_FILE`。详见 `RUN_WITH_SSL_CERT.md`。
