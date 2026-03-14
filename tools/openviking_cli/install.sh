@@ -1,11 +1,11 @@
 #!/bin/bash
-# OpenViking CLI Bundle：通过 ov/openviking 命令连接 OpenViking Server
-# API 与证书使用逻辑与 tools/openviking 对齐（配置文件 + 可选 TLS 证书）
+# OpenViking CLI Bundle：通过 ov 命令调用已部署的 OpenViking 服务
+# 模型已在他处部署，仅需配置 ovcli.conf 的 url 即可直接调用
 
 set -e
 
 echo "=========================================="
-echo "OpenViking CLI (Server) Installation"
+echo "OpenViking CLI Installation"
 echo "=========================================="
 echo ""
 
@@ -67,7 +67,7 @@ echo ""
 echo "=========================================="
 echo "Installation Complete"
 echo "=========================================="
-echo "OpenViking CLI tools (connect to Server):"
+echo "OpenViking CLI tools:"
 echo "  - ov_index_repo  - ov add-resource (index repo)"
 echo "  - ov_wait        - ov system wait"
 echo "  - ov_find        - ov find (semantic search)"
@@ -77,5 +77,5 @@ echo "  - ov_read        - ov read (L2)"
 echo "  - ov_ls          - ov ls"
 echo "  - ov_glob        - ov glob"
 echo ""
-echo "Prerequisite: start OpenViking Server. Edit ovcli.conf in this directory to set url and api_key."
+echo "Edit ovcli.conf to set url (deployed OpenViking service) and api_key."
 echo ""

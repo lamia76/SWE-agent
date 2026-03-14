@@ -35,7 +35,7 @@ def main():
             sys.stderr.write(stderr)
         json_error(
             message=f"ov system wait failed (exit {code})",
-            hint="Check OpenViking Server is running",
+            hint="Check ovcli.conf and network",
             error_type="OpenVikingError",
         )
         sys.exit(1)

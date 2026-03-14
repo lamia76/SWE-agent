@@ -1,6 +1,6 @@
 # 证书配置说明（逻辑已合并到 install.sh）
 
-当 OpenViking Server 或其后端 API 使用 **HTTPS 且为自签名/私有 CA** 时，需要指定 CA 证书。该逻辑已合并到 **install.sh**：将证书放在**本目录**下即可。
+当 OpenViking 服务或其 API 使用 **HTTPS 且为自签名/私有 CA** 时，需要指定 CA 证书。该逻辑已合并到 **install.sh**：将证书放在**本目录**下即可。
 
 ## 使用方式
 
@@ -12,6 +12,6 @@
 
 ## 说明
 
-- Server 为 **HTTP**（如 `http://141.61.16.3:8090`，端口与 ov.conf `server.port` 一致）时无需证书。
-- Server 为 **HTTPS** 且为公网 CA 签发时，通常无需配置。
-- 仅当 Server 或其后端 API 使用**自签名/私有 CA** 时，需将对应 CA 证书放到本目录并命名为 tls-ca-bundle.pem，然后执行 install.sh。
+- 服务地址为 **HTTP**（如 `http://141.61.16.3:8090`）时无需证书。
+- 服务为 **HTTPS** 且由公网 CA 签发时，通常无需配置。
+- 仅当服务或其 API 使用**自签名/私有 CA** 时，将对应 CA 证书放到本目录并命名为 tls-ca-bundle.pem，执行 install.sh。

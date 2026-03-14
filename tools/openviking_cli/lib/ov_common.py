@@ -173,7 +173,7 @@ def handle_exceptions(func):
         except Exception as e:
             json_error(
                 message=str(e),
-                hint="Check OpenViking Server connectivity and ovcli.conf",
+                hint="Check ovcli.conf and network connectivity",
                 error_type="OpenVikingError",
             )
             sys.exit(1)

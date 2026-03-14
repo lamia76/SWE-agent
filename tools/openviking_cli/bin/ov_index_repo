@@ -57,7 +57,7 @@ After indexing: ov_wait, ov_find, ov_abstract, ov_overview, ov_read
             sys.stderr.write(stderr)
         json_error(
             message=f"ov add-resource failed (exit {code})",
-            hint="Check OpenViking Server and ovcli.conf",
+            hint="Check ovcli.conf and network",
             error_type="IndexingError",
         )
         sys.exit(1)

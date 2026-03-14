@@ -1,12 +1,12 @@
 # OpenViking CLI Tool Bundle for SWE-agent
 
-基于**最新 OpenViking 仓库**，使用 **CLI 方式通过 HTTP** 调用 OpenViking。**不跨目录**：所有 API 连接配置仅在本目录下，直接修改 **tools/openviking_cli/ovcli.conf** 即可。
+基于 OpenViking，使用 **CLI 方式通过 HTTP** 调用已部署的 OpenViking 服务。模型已在他处部署，**仅需配置 ovcli.conf 的 url 即可直接调用**，无需本地启动 Server。
 
 ## 配置（仅本目录）
 
 | 文件 | 说明 |
 |------|------|
-| **ovcli.conf** | API 连接配置：`url`（OpenViking Server 地址）、`api_key`（可选）。直接编辑此文件修改接口地址与鉴权。 |
+| **ovcli.conf** | API 连接配置：`url`（已部署的 OpenViking 服务地址）、`api_key`（可选）。 |
 
 install 与各 bin 脚本仅读取本目录的 ovcli.conf，设置 `OPENVIKING_CLI_CONFIG_FILE` 后调用 ov 命令，不引用其他目录。
 
@@ -36,14 +36,8 @@ cd SWE-agent/tools/openviking_cli
 
 编辑 **tools/openviking_cli/ovcli.conf**：
 
-- **url**：OpenViking Server 的 HTTP 地址（如 `http://141.61.16.3:8090`）
-- **api_key**：若 Server 启用了鉴权则填写，否则保持 `null`
-
-无需改其他目录；所有 openviking_cli 调用都基于本目录下该文件。
-
-## 启动 OpenViking Server
-
-Server 的启动与配置由部署侧自行决定。本 bundle 仅通过 ovcli.conf 的 url/api_key 连接已有 Server。
+- **url**：已部署 OpenViking 服务的 HTTP 地址（如 `http://141.61.16.3:8090`）
+- **api_key**：若服务启用了鉴权则填写，否则保持 `null`
 
 ## 单独测试 openviking_cli 调用方式
 
@@ -51,8 +45,8 @@ Server 的启动与配置由部署侧自行决定。本 bundle 仅通过 ovcli.c
 
 ### 前提
 
-- 已有可访问的 OpenViking Server，地址记为 `http://YOUR_OV_SERVER:8090`（或实际端口）
-- 本机可以访问该地址（如有代理，需按部署要求设置 `no_proxy` 等）
+- 已有可访问的 OpenViking 服务（模型已在他处部署），地址记为 `http://YOUR_OV_SERVER:8090`
+- 本机可访问该地址（如有代理，设置 `no_proxy` 等）
 
 ### 步骤一：配置 ovcli.conf
 
@@ -91,7 +85,7 @@ ov ls viking://
 ov find "hello world" -n 3
 ```
 
-如能返回结果，说明 CLI → Server HTTP 调用链路正常。
+如能返回结果，说明 CLI 调用链路正常。
 
 ### 步骤四：用 bundle 封装命令测试
 
@@ -145,7 +139,7 @@ ov_read viking://path/to/file.py --max-chars 16000
 ## 故障排除
 
 - **未找到 ov / openviking**：执行 `./install.sh`，确认 PATH 含 Python bin。
-- **连接 Server 失败**：检查本目录 **ovcli.conf** 的 `url` 与网络；HTTPS 时见 `RUN_WITH_SSL_CERT.md`。
+- **连接失败**：检查 **ovcli.conf** 的 `url` 与网络；HTTPS 时见 `RUN_WITH_SSL_CERT.md`。
 - **鉴权失败**：在 **ovcli.conf** 中设置正确的 `api_key`。
 
 ## 许可证
