@@ -57,10 +57,11 @@ else
 fi
 echo ""
 
-# 确保 ov 命令在 PATH 中
+# 确保 ov 命令和本 bundle 的 bin 在 PATH 中
 PYTHON_BIN=$(python3 -c "import sys; print(sys.prefix)")/bin
-export PATH="$PYTHON_BIN:$PATH"
-echo "✓ PATH includes $PYTHON_BIN"
+BUNDLE_BIN="$bundle_dir/bin"
+export PATH="$BUNDLE_BIN:$PYTHON_BIN:$PATH"
+echo "✓ PATH includes $BUNDLE_BIN and $PYTHON_BIN"
 echo ""
 
 echo "=========================================="

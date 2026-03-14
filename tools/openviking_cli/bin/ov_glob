@@ -1,23 +1,45 @@
-#!/bin/bash
-bundle_dir="$(cd "$(dirname "$0")/.." && pwd)"
-export PATH="$(python3 -c "import sys; print(sys.prefix)")/bin:$PATH"
-if [ -n "$OPENVIKING_SERVER_URL" ]; then
-  OVCLI="$bundle_dir/.ovcli.env.json"
-  python3 - "$OVCLI" << 'PY' || true
-import json, os, sys
-p = sys.argv[1]
-c = {"url": os.environ.get("OPENVIKING_SERVER_URL", ""), "api_key": os.environ.get("OPENVIKING_API_KEY") or None, "agent_id": None, "timeout": 120.0, "output": "table"}
-open(p, "w").write(json.dumps(c, indent=2))
-PY
-  [ -f "$OVCLI" ] && export OPENVIKING_CLI_CONFIG_FILE="$OVCLI"
-elif [ -f "$bundle_dir/ovcli.conf" ]; then
-  export OPENVIKING_CLI_CONFIG_FILE="$bundle_dir/ovcli.conf"
-fi
-[ -f "$bundle_dir/tls-ca-bundle.pem" ] && export REQUESTS_CA_BUNDLE="$bundle_dir/tls-ca-bundle.pem" && export SSL_CERT_FILE="$bundle_dir/tls-ca-bundle.pem"
-if command -v ov &>/dev/null; then
-  exec ov glob "$@"
-elif command -v openviking &>/dev/null; then
-  exec openviking glob "$@"
-else
-  exec python3 -m openviking glob "$@"
-fi
+#!/usr/bin/env python3
+"""
+OpenViking CLI tool: ov_glob
+
+Glob pattern search (ov glob). Same logic as tools/openviking, backend uses ov CLI.
+"""
+
+import argparse
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
+from ov_common import json_error, handle_exceptions, run_ov_cli
+
+
+@handle_exceptions
+def main():
+    parser = argparse.ArgumentParser(
+        description="Find files by glob pattern",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument("pattern", help="Glob pattern (e.g. **/*.py, **/test_*.py)")
+    parser.add_argument(
+        "--uri",
+        default="viking://",
+        help="Search scope URI (default: viking://)",
+    )
+    args = parser.parse_args()
+
+    cli_args = [args.pattern, "--uri", args.uri]
+    code, stdout, stderr = run_ov_cli("glob", cli_args)
+    if code != 0:
+        if stderr:
+            sys.stderr.write(stderr)
+        json_error(
+            message=f"ov glob failed (exit {code})",
+            hint="Check pattern and URI",
+            error_type="OpenVikingError",
+        )
+        sys.exit(1)
+    print(stdout, end="")
+
+
+if __name__ == "__main__":
+    main()

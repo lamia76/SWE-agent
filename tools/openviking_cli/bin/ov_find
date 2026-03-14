@@ -1,32 +1,51 @@
-#!/bin/bash
-# 将 -k N 转为 --limit N；若 benchmark 设置了 OPENVIKING_SERVER_URL 则优先用该 API 地址
-bundle_dir="$(cd "$(dirname "$0")/.." && pwd)"
-export PATH="$(python3 -c "import sys; print(sys.prefix)")/bin:$PATH"
-if [ -n "$OPENVIKING_SERVER_URL" ]; then
-  OVCLI="$bundle_dir/.ovcli.env.json"
-  python3 - "$OVCLI" << 'PY' || true
-import json, os, sys
-p = sys.argv[1]
-c = {"url": os.environ.get("OPENVIKING_SERVER_URL", ""), "api_key": os.environ.get("OPENVIKING_API_KEY") or None, "agent_id": None, "timeout": 120.0, "output": "table"}
-open(p, "w").write(json.dumps(c, indent=2))
-PY
-  [ -f "$OVCLI" ] && export OPENVIKING_CLI_CONFIG_FILE="$OVCLI"
-elif [ -f "$bundle_dir/ovcli.conf" ]; then
-  export OPENVIKING_CLI_CONFIG_FILE="$bundle_dir/ovcli.conf"
-fi
-[ -f "$bundle_dir/tls-ca-bundle.pem" ] && export REQUESTS_CA_BUNDLE="$bundle_dir/tls-ca-bundle.pem" && export SSL_CERT_FILE="$bundle_dir/tls-ca-bundle.pem"
-args=()
-for i in "$@"; do
-  case "$i" in
-  -k) args+=(--limit) ;;
-  --score-threshold) args+=(--threshold) ;;
-  *) args+=("$i") ;;
-  esac
-done
-if command -v ov &>/dev/null; then
-  exec ov find "${args[@]}"
-elif command -v openviking &>/dev/null; then
-  exec openviking find "${args[@]}"
-else
-  exec python3 -m openviking find "${args[@]}"
-fi
+#!/usr/bin/env python3
+"""
+OpenViking CLI tool: ov_find
+
+Semantic search (ov find). Same logic as tools/openviking, backend uses ov CLI.
+Maps -k -> --limit, --score-threshold -> --threshold.
+"""
+
+import argparse
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
+from ov_common import json_error, handle_exceptions, run_ov_cli
+
+
+@handle_exceptions
+def main():
+    parser = argparse.ArgumentParser(
+        description="Semantic search in indexed repository",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument("query", help="Search query")
+    parser.add_argument("-k", type=int, default=10, dest="k", help="Result count (default: 10)")
+    parser.add_argument(
+        "--score-threshold",
+        type=float,
+        dest="threshold",
+        help="Min relevance score (0.0-1.0)",
+    )
+    args = parser.parse_args()
+
+    cli_args = [args.query, "--limit", str(args.k)]
+    if args.threshold is not None:
+        cli_args.extend(["--threshold", str(args.threshold)])
+
+    code, stdout, stderr = run_ov_cli("find", cli_args)
+    if code != 0:
+        if stderr:
+            sys.stderr.write(stderr)
+        json_error(
+            message=f"ov find failed (exit {code})",
+            hint="Ensure ov_index_repo and ov_wait have been run",
+            error_type="OpenVikingError",
+        )
+        sys.exit(1)
+    print(stdout, end="")
+
+
+if __name__ == "__main__":
+    main()

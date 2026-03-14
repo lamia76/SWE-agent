@@ -1,24 +1,89 @@
-#!/bin/bash
-# 仅使用本目录 ovcli.conf；若 benchmark 设置了 OPENVIKING_SERVER_URL 则优先用该 API 地址
-bundle_dir="$(cd "$(dirname "$0")/.." && pwd)"
-export PATH="$(python3 -c "import sys; print(sys.prefix)")/bin:$PATH"
-if [ -n "$OPENVIKING_SERVER_URL" ]; then
-  OVCLI="$bundle_dir/.ovcli.env.json"
-  python3 - "$OVCLI" << 'PY' || true
-import json, os, sys
-p = sys.argv[1]
-c = {"url": os.environ.get("OPENVIKING_SERVER_URL", ""), "api_key": os.environ.get("OPENVIKING_API_KEY") or None, "agent_id": None, "timeout": 120.0, "output": "table"}
-open(p, "w").write(json.dumps(c, indent=2))
-PY
-  [ -f "$OVCLI" ] && export OPENVIKING_CLI_CONFIG_FILE="$OVCLI"
-elif [ -f "$bundle_dir/ovcli.conf" ]; then
-  export OPENVIKING_CLI_CONFIG_FILE="$bundle_dir/ovcli.conf"
-fi
-[ -f "$bundle_dir/tls-ca-bundle.pem" ] && export REQUESTS_CA_BUNDLE="$bundle_dir/tls-ca-bundle.pem" && export SSL_CERT_FILE="$bundle_dir/tls-ca-bundle.pem"
-if command -v ov &>/dev/null; then
-  exec ov add-resource "$@"
-elif command -v openviking &>/dev/null; then
-  exec openviking add-resource "$@"
-else
-  exec python3 -m openviking add-resource "$@"
-fi
+#!/usr/bin/env python3
+"""
+OpenViking CLI tool: index_repo
+
+Index a repository into OpenViking (via ov add-resource).
+Same logic as tools/openviking, backend uses ov CLI.
+"""
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
+from ov_common import (
+    save_root_uri,
+    json_print,
+    json_error,
+    handle_exceptions,
+    run_ov_cli,
+)
+
+
+@handle_exceptions
+def main():
+    parser = argparse.ArgumentParser(
+        description="Index a repository into OpenViking for semantic search",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  ov_index_repo .
+  ov_index_repo /path/to/repo
+
+After indexing: ov_wait, ov_find, ov_abstract, ov_overview, ov_read
+""",
+    )
+    parser.add_argument(
+        "repo_path",
+        nargs="?",
+        default=".",
+        help="Path to repository directory (default: current directory)",
+    )
+    args = parser.parse_args()
+    repo_path = Path(args.repo_path).expanduser().resolve()
+
+    if not repo_path.exists():
+        json_error(
+            message=f"Repository path does not exist: {repo_path}",
+            hint="Please provide a valid path to a repository",
+            error_type="FileNotFoundError",
+        )
+        sys.exit(1)
+
+    code, stdout, stderr = run_ov_cli("add-resource", [str(repo_path)])
+    if code != 0:
+        if stderr:
+            sys.stderr.write(stderr)
+        json_error(
+            message=f"ov add-resource failed (exit {code})",
+            hint="Check OpenViking Server and ovcli.conf",
+            error_type="IndexingError",
+        )
+        sys.exit(1)
+
+    try:
+        result = json.loads(stdout) if stdout.strip() else {}
+    except json.JSONDecodeError:
+        result = {}
+        if stdout:
+            print(stdout)
+
+    root_uri = result.get("root_uri") if isinstance(result, dict) else None
+    if root_uri:
+        save_root_uri(root_uri)
+        json_print({
+            "root_uri": root_uri,
+            "indexed_path": str(repo_path),
+            "status": "indexed",
+        })
+    else:
+        json_print({
+            "indexed_path": str(repo_path),
+            "status": "indexed",
+            "raw_output": stdout[:500] if stdout else "(no output)",
+        })
+
+
+if __name__ == "__main__":
+    main()
