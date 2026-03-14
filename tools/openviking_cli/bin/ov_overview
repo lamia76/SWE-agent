@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """
-OpenViking CLI tool: ov_overview
-
-Get L1 overview (ov overview). Same logic as tools/openviking, backend uses ov CLI.
+OpenViking tool: ov_overview (嵌入式模式，与 tools/openviking 相同)
 """
 
 import argparse
@@ -10,36 +8,26 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
-from ov_common import json_error, handle_exceptions, run_ov_cli
+from ov_common import new_client, json_print, truncate, handle_exceptions
 
 
 @handle_exceptions
 def main():
-    parser = argparse.ArgumentParser(
-        description="Get L1 overview of file/directory",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
+    parser = argparse.ArgumentParser(description="Get L1 overview of file/directory")
     parser.add_argument("uri", help="OpenViking URI (e.g. viking://path/to/file.py)")
-    parser.add_argument(
-        "--max-chars",
-        type=int,
-        default=8192,
-        help="Max chars (default: 8192)",
-    )
+    parser.add_argument("--max-chars", type=int, default=8192, help="Max chars (default: 8192)")
     args = parser.parse_args()
 
-    cli_args = [args.uri, "--max-chars", str(args.max_chars)]
-    code, stdout, stderr = run_ov_cli("overview", cli_args)
-    if code != 0:
-        if stderr:
-            sys.stderr.write(stderr)
-        json_error(
-            message=f"ov overview failed (exit {code})",
-            hint="Check URI is valid",
-            error_type="OpenVikingError",
-        )
-        sys.exit(1)
-    print(stdout, end="")
+    client = new_client()
+    try:
+        vfs = getattr(client, "viking_fs", client)
+        fn = getattr(vfs, "overview", None) or getattr(client, "overview", None)
+        out = fn(args.uri, max_chars=args.max_chars) if fn else vfs.get_overview(args.uri, max_chars=args.max_chars)
+        text = out.get("overview", out) if isinstance(out, dict) else str(out)
+        result = truncate(text, args.max_chars)
+        json_print({"uri": args.uri, **result})
+    finally:
+        client.close()
 
 
 if __name__ == "__main__":

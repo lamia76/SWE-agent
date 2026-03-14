@@ -1,6 +1,6 @@
 # 证书配置说明（逻辑已合并到 install.sh）
 
-当 OpenViking 服务或其 API 使用 **HTTPS 且为自签名/私有 CA** 时，需要指定 CA 证书。该逻辑已合并到 **install.sh**：将证书放在**本目录**下即可。
+当 embedding/vlm API 使用 **HTTPS 且为自签名/私有 CA** 时，需要指定 CA 证书。该逻辑已合并到 **install.sh**：将证书放在**本目录**下即可。
 
 ## 使用方式
 

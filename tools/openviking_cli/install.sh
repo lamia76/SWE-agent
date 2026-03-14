@@ -1,11 +1,11 @@
 #!/bin/bash
-# OpenViking CLI Bundle：通过 ov 命令调用已部署的 OpenViking 服务
-# 模型已在他处部署，仅需配置 ovcli.conf 的 url 即可直接调用
+# OpenViking 嵌入式模式：与 tools/openviking 相同逻辑，使用 SyncOpenViking SDK 本地调用
+# 配置 ov.conf 中的 embedding/vlm/rerank API 地址即可，无需启动 Server
 
 set -e
 
 echo "=========================================="
-echo "OpenViking CLI Installation"
+echo "OpenViking (Embedded) Installation"
 echo "=========================================="
 echo ""
 
@@ -35,29 +35,37 @@ else
 fi
 echo ""
 
-# 仅使用本目录下的 ovcli.conf 作为 API 连接配置（不跨目录）
-CLI_CONF="${bundle_dir}/ovcli.conf"
-if [ -f "$CLI_CONF" ]; then
-    export OPENVIKING_CLI_CONFIG_FILE="$CLI_CONF"
-    echo "✓ OPENVIKING_CLI_CONFIG_FILE=$CLI_CONF"
+# 嵌入式模式：使用 ov.conf（与 tools/openviking 格式相同）
+OV_CONF="${bundle_dir}/ov.conf"
+if [ -f "$OV_CONF" ]; then
+    export OPENVIKING_CONFIG_FILE="$(cd "$(dirname "$OV_CONF")" && pwd)/$(basename "$OV_CONF")"
+    echo "✓ OPENVIKING_CONFIG_FILE=$OPENVIKING_CONFIG_FILE"
 else
-    echo "⚠ ovcli.conf not found: $CLI_CONF (set OPENVIKING_CLI_CONFIG_FILE manually)"
+    echo "⚠ ov.conf not found: $OV_CONF (edit embedding/vlm/rerank API in ov.conf)"
 fi
 echo ""
 
-# RUN_WITH_SSL_CERT 逻辑合并：证书放在本目录下 tls-ca-bundle.pem，install 自动设置（HTTPS/自签名/私有 CA 时使用）
+# 数据目录
+export OPENVIKING_DATA_DIR="${OPENVIKING_DATA_DIR:-./.openviking}"
+if [ ! -d "$OPENVIKING_DATA_DIR" ]; then
+    mkdir -p "$OPENVIKING_DATA_DIR"
+    echo "✓ Created data directory: $OPENVIKING_DATA_DIR"
+else
+    echo "✓ Data directory: $OPENVIKING_DATA_DIR"
+fi
+echo ""
+
+# 可选：TLS 证书（embedding/vlm 使用 HTTPS 自签名时）
 CA_BUNDLE="${bundle_dir}/tls-ca-bundle.pem"
 if [ -f "$CA_BUNDLE" ]; then
     CA_ABS=$(cd "$(dirname "$CA_BUNDLE")" && pwd)/$(basename "$CA_BUNDLE")
     export REQUESTS_CA_BUNDLE="$CA_ABS"
     export SSL_CERT_FILE="$CA_ABS"
-    echo "✓ TLS certificate (from same dir): $CA_ABS"
-else
-    echo "ℹ No tls-ca-bundle.pem in this dir (optional; put cert here and re-run install if needed for HTTPS/custom CA)"
+    echo "✓ TLS certificate: $CA_ABS"
 fi
 echo ""
 
-# 确保 ov 命令和本 bundle 的 bin 在 PATH 中
+# PATH
 PYTHON_BIN=$(python3 -c "import sys; print(sys.prefix)")/bin
 BUNDLE_BIN="$bundle_dir/bin"
 export PATH="$BUNDLE_BIN:$PYTHON_BIN:$PATH"
@@ -67,15 +75,15 @@ echo ""
 echo "=========================================="
 echo "Installation Complete"
 echo "=========================================="
-echo "OpenViking CLI tools:"
-echo "  - ov_index_repo  - ov add-resource (index repo)"
-echo "  - ov_wait        - ov system wait"
-echo "  - ov_find        - ov find (semantic search)"
-echo "  - ov_abstract    - ov abstract (L0)"
-echo "  - ov_overview    - ov overview (L1)"
-echo "  - ov_read        - ov read (L2)"
-echo "  - ov_ls          - ov ls"
-echo "  - ov_glob        - ov glob"
+echo "OpenViking tools (embedded mode):"
+echo "  - ov_index_repo  - index repo"
+echo "  - ov_wait        - wait for processing"
+echo "  - ov_find        - semantic search"
+echo "  - ov_abstract    - L0 abstract"
+echo "  - ov_overview    - L1 overview"
+echo "  - ov_read        - L2 full content"
+echo "  - ov_ls          - list directory"
+echo "  - ov_glob        - glob pattern"
 echo ""
-echo "Edit ovcli.conf to set url (deployed OpenViking service) and api_key."
+echo "Edit ov.conf to set embedding/vlm/rerank API addresses."
 echo ""

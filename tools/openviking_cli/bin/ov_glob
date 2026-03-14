@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """
-OpenViking CLI tool: ov_glob
-
-Glob pattern search (ov glob). Same logic as tools/openviking, backend uses ov CLI.
+OpenViking tool: ov_glob (嵌入式模式，与 tools/openviking 相同)
 """
 
 import argparse
@@ -10,35 +8,24 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
-from ov_common import json_error, handle_exceptions, run_ov_cli
+from ov_common import new_client, json_print, handle_exceptions
 
 
 @handle_exceptions
 def main():
-    parser = argparse.ArgumentParser(
-        description="Find files by glob pattern",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
+    parser = argparse.ArgumentParser(description="Find files by glob pattern")
     parser.add_argument("pattern", help="Glob pattern (e.g. **/*.py, **/test_*.py)")
-    parser.add_argument(
-        "--uri",
-        default="viking://",
-        help="Search scope URI (default: viking://)",
-    )
+    parser.add_argument("--uri", default="viking://", help="Search scope URI (default: viking://)")
     args = parser.parse_args()
 
-    cli_args = [args.pattern, "--uri", args.uri]
-    code, stdout, stderr = run_ov_cli("glob", cli_args)
-    if code != 0:
-        if stderr:
-            sys.stderr.write(stderr)
-        json_error(
-            message=f"ov glob failed (exit {code})",
-            hint="Check pattern and URI",
-            error_type="OpenVikingError",
-        )
-        sys.exit(1)
-    print(stdout, end="")
+    client = new_client()
+    try:
+        vfs = getattr(client, "viking_fs", client)
+        fn = getattr(vfs, "glob", None) or getattr(client, "glob", None)
+        result = fn(args.pattern, uri=args.uri) if fn else vfs.glob_search(args.pattern, uri=args.uri)
+        json_print(result if isinstance(result, (dict, list)) else {"matches": result})
+    finally:
+        client.close()
 
 
 if __name__ == "__main__":

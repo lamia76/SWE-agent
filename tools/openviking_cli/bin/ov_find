@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 """
-OpenViking CLI tool: ov_find
-
-Semantic search (ov find). Same logic as tools/openviking, backend uses ov CLI.
-Maps -k -> --limit, --score-threshold -> --threshold.
+OpenViking tool: ov_find (嵌入式模式，与 tools/openviking 相同)
 """
 
 import argparse
@@ -11,40 +8,30 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
-from ov_common import json_error, handle_exceptions, run_ov_cli
+from ov_common import new_client, json_print, handle_exceptions
 
 
 @handle_exceptions
 def main():
-    parser = argparse.ArgumentParser(
-        description="Semantic search in indexed repository",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
+    parser = argparse.ArgumentParser(description="Semantic search in indexed repository")
     parser.add_argument("query", help="Search query")
     parser.add_argument("-k", type=int, default=10, dest="k", help="Result count (default: 10)")
-    parser.add_argument(
-        "--score-threshold",
-        type=float,
-        dest="threshold",
-        help="Min relevance score (0.0-1.0)",
-    )
+    parser.add_argument("--score-threshold", type=float, dest="threshold", help="Min relevance score (0.0-1.0)")
     args = parser.parse_args()
 
-    cli_args = [args.query, "--limit", str(args.k)]
-    if args.threshold is not None:
-        cli_args.extend(["--threshold", str(args.threshold)])
-
-    code, stdout, stderr = run_ov_cli("find", cli_args)
-    if code != 0:
-        if stderr:
-            sys.stderr.write(stderr)
-        json_error(
-            message=f"ov find failed (exit {code})",
-            hint="Ensure ov_index_repo and ov_wait have been run",
-            error_type="OpenVikingError",
-        )
-        sys.exit(1)
-    print(stdout, end="")
+    client = new_client()
+    try:
+        vfs = getattr(client, "viking_fs", client)
+        kwargs = {"limit": args.k}
+        if args.threshold is not None:
+            kwargs["score_threshold"] = args.threshold
+        if hasattr(vfs, "find"):
+            result = vfs.find(args.query, **kwargs)
+        else:
+            result = client.find(args.query, **kwargs)
+        json_print(result if isinstance(result, (dict, list)) else {"results": result})
+    finally:
+        client.close()
 
 
 if __name__ == "__main__":

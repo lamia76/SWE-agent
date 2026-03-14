@@ -1,8 +1,8 @@
-# CLI 方式调用已部署的 OpenViking 服务：通过 ov 命令直接调用，工具签名与 tools/openviking 一致
+# 嵌入式模式：与 tools/openviking 相同逻辑，使用 SyncOpenViking SDK 本地调用，配置 ov.conf
 tools:
   ov_index_repo:
     signature: "ov_index_repo <repo_path>"
-    docstring: "索引目标仓库到OpenViking数据库，用于语义搜索。首次使用时必须执行此命令，后续添加大量新文件后也应重新索引。索引进度完成后，可以使用ov_find进行语义搜索。配置 ovcli.conf 的 url 指向已部署的 OpenViking 服务即可。"
+    docstring: "索引目标仓库到OpenViking数据库，用于语义搜索。首次使用时必须执行此命令，后续添加大量新文件后也应重新索引。索引进度完成后，可以使用ov_find进行语义搜索。配置 ov.conf 中的 embedding/vlm/rerank API 地址即可（嵌入式模式）。"
     arguments:
       - name: repo_path
         type: string
