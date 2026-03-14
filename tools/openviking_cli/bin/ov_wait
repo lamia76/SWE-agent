@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-OpenViking tool: ov_wait (嵌入式模式，与 tools/openviking 相同)
+OpenViking CLI tool: ov_wait (通过 ov system wait 连接 Server)
 """
 
 import argparse
@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
-from ov_common import new_client, json_print, handle_exceptions
+from ov_common import json_print, json_error, handle_exceptions, run_ov_cli
 
 
 @handle_exceptions
@@ -17,20 +17,18 @@ def main():
     parser.add_argument("--timeout", type=int, default=300, help="Max wait time in seconds")
     args = parser.parse_args()
 
-    client = new_client()
-    try:
-        vfs = getattr(client, "viking_fs", client)
-        wait_fn = getattr(vfs, "wait", None) or getattr(getattr(client, "system", None), "wait", None)
-        if wait_fn:
-            wait_fn(timeout=args.timeout)
-        else:
-            # Fallback: some SDKs use system_wait
-            sw = getattr(client, "system_wait", None)
-            if sw:
-                sw(timeout=args.timeout)
-        json_print({"status": "ready", "message": "All operations completed successfully"})
-    finally:
-        client.close()
+    cli_args = ["--timeout", str(args.timeout)]
+    code, stdout, stderr = run_ov_cli("system", ["wait"] + cli_args)
+    if code != 0:
+        if stderr:
+            sys.stderr.write(stderr)
+        json_error(
+            message=f"ov system wait failed (exit {code})",
+            hint="Check ovcli.conf and OpenViking Server",
+            error_type="OpenVikingError",
+        )
+        sys.exit(1)
+    json_print({"status": "ready", "message": "All operations completed successfully"})
 
 
 if __name__ == "__main__":

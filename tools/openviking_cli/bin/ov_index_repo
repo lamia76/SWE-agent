@@ -1,20 +1,15 @@
 #!/usr/bin/env python3
 """
-OpenViking tool: index_repo (嵌入式模式，与 tools/openviking 相同)
+OpenViking CLI tool: index_repo (通过 ov add-resource 连接 Server)
 """
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
-from ov_common import (
-    new_client,
-    save_root_uri,
-    json_print,
-    json_error,
-    handle_exceptions,
-)
+from ov_common import save_root_uri, json_print, json_error, handle_exceptions, run_ov_cli
 
 
 @handle_exceptions
@@ -40,26 +35,38 @@ def main():
         )
         sys.exit(1)
 
-    client = new_client()
+    code, stdout, stderr = run_ov_cli("add-resource", [str(repo_path)])
+    if code != 0:
+        if stderr:
+            sys.stderr.write(stderr)
+        json_error(
+            message=f"ov add-resource failed (exit {code})",
+            hint="Check ovcli.conf and OpenViking Server connectivity",
+            error_type="IndexingError",
+        )
+        sys.exit(1)
+
     try:
-        result = client.add_resource(path=str(repo_path))
-        if result and isinstance(result, dict) and "root_uri" in result:
-            root_uri = result["root_uri"]
-            save_root_uri(root_uri)
-            json_print({
-                "root_uri": root_uri,
-                "indexed_path": str(repo_path),
-                "status": "indexed",
-            })
-        else:
-            json_error(
-                message="Failed to index repository",
-                hint="The resource was added but no root_uri was returned",
-                error_type="IndexingError",
-            )
-            sys.exit(1)
-    finally:
-        client.close()
+        result = json.loads(stdout) if stdout.strip() else {}
+    except json.JSONDecodeError:
+        result = {}
+        if stdout:
+            print(stdout)
+
+    root_uri = result.get("root_uri") if isinstance(result, dict) else None
+    if root_uri:
+        save_root_uri(root_uri)
+        json_print({
+            "root_uri": root_uri,
+            "indexed_path": str(repo_path),
+            "status": "indexed",
+        })
+    else:
+        json_print({
+            "indexed_path": str(repo_path),
+            "status": "indexed",
+            "raw_output": stdout[:500] if stdout else "(no output)",
+        })
 
 
 if __name__ == "__main__":

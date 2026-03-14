@@ -1,11 +1,11 @@
 #!/bin/bash
-# OpenViking 嵌入式模式：与 tools/openviking 相同逻辑，使用 SyncOpenViking SDK 本地调用
-# 配置 ov.conf 中的 embedding/vlm/rerank API 地址即可，无需启动 Server
+# OpenViking CLI Bundle：通过 ov 命令连接 OpenViking Server（HTTP）
+# 模型已在他处部署，配置 ovcli.conf 的 url 即可直接调用
 
 set -e
 
 echo "=========================================="
-echo "OpenViking (Embedded) Installation"
+echo "OpenViking CLI Installation"
 echo "=========================================="
 echo ""
 
@@ -35,27 +35,15 @@ else
 fi
 echo ""
 
-# 嵌入式模式：使用 ov.conf（与 tools/openviking 格式相同）
-OV_CONF="${bundle_dir}/ov.conf"
-if [ -f "$OV_CONF" ]; then
-    export OPENVIKING_CONFIG_FILE="$(cd "$(dirname "$OV_CONF")" && pwd)/$(basename "$OV_CONF")"
-    echo "✓ OPENVIKING_CONFIG_FILE=$OPENVIKING_CONFIG_FILE"
+CLI_CONF="${bundle_dir}/ovcli.conf"
+if [ -f "$CLI_CONF" ]; then
+    export OPENVIKING_CLI_CONFIG_FILE="$CLI_CONF"
+    echo "✓ OPENVIKING_CLI_CONFIG_FILE=$CLI_CONF"
 else
-    echo "⚠ ov.conf not found: $OV_CONF (edit embedding/vlm/rerank API in ov.conf)"
+    echo "⚠ ovcli.conf not found: $CLI_CONF (set OPENVIKING_CLI_CONFIG_FILE or OPENVIKING_SERVER_URL)"
 fi
 echo ""
 
-# 数据目录
-export OPENVIKING_DATA_DIR="${OPENVIKING_DATA_DIR:-./.openviking}"
-if [ ! -d "$OPENVIKING_DATA_DIR" ]; then
-    mkdir -p "$OPENVIKING_DATA_DIR"
-    echo "✓ Created data directory: $OPENVIKING_DATA_DIR"
-else
-    echo "✓ Data directory: $OPENVIKING_DATA_DIR"
-fi
-echo ""
-
-# 可选：TLS 证书（embedding/vlm 使用 HTTPS 自签名时）
 CA_BUNDLE="${bundle_dir}/tls-ca-bundle.pem"
 if [ -f "$CA_BUNDLE" ]; then
     CA_ABS=$(cd "$(dirname "$CA_BUNDLE")" && pwd)/$(basename "$CA_BUNDLE")
@@ -65,7 +53,6 @@ if [ -f "$CA_BUNDLE" ]; then
 fi
 echo ""
 
-# PATH
 PYTHON_BIN=$(python3 -c "import sys; print(sys.prefix)")/bin
 BUNDLE_BIN="$bundle_dir/bin"
 export PATH="$BUNDLE_BIN:$PYTHON_BIN:$PATH"
@@ -75,15 +62,15 @@ echo ""
 echo "=========================================="
 echo "Installation Complete"
 echo "=========================================="
-echo "OpenViking tools (embedded mode):"
-echo "  - ov_index_repo  - index repo"
-echo "  - ov_wait        - wait for processing"
-echo "  - ov_find        - semantic search"
-echo "  - ov_abstract    - L0 abstract"
-echo "  - ov_overview    - L1 overview"
-echo "  - ov_read        - L2 full content"
-echo "  - ov_ls          - list directory"
-echo "  - ov_glob        - glob pattern"
+echo "OpenViking CLI tools (connect to Server via ov):"
+echo "  - ov_index_repo  - ov add-resource"
+echo "  - ov_wait        - ov system wait"
+echo "  - ov_find        - ov find"
+echo "  - ov_abstract    - ov abstract"
+echo "  - ov_overview    - ov overview"
+echo "  - ov_read        - ov read"
+echo "  - ov_ls          - ov ls"
+echo "  - ov_glob        - ov glob"
 echo ""
-echo "Edit ov.conf to set embedding/vlm/rerank API addresses."
+echo "Edit ovcli.conf to set url (OpenViking Server) and api_key."
 echo ""

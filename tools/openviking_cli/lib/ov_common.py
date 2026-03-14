@@ -1,33 +1,26 @@
 # Copyright (c) 2026 OpenViking-SWE-Agent Integration
 # SPDX-License-Identifier: Apache-2.0
 """
-OpenViking common utilities - 嵌入式模式，与 tools/openviking 相同逻辑。
-使用 SyncOpenViking SDK 直接调用，无需远程 Server。
+OpenViking CLI common utilities - 通过 ov 命令连接 OpenViking Server（HTTP）。
 """
 
 import json
 import os
+import shutil
+import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Tuple
+
+
+def get_bundle_dir() -> Path:
+    """Get the openviking_cli bundle directory."""
+    return Path(__file__).resolve().parent.parent
 
 
 def get_repo_root() -> Path:
-    """Get the repository root directory. Defaults to current working directory."""
+    """Get the repository root directory."""
     return Path.cwd()
-
-
-def get_data_dir() -> Path:
-    """Get OpenViking data directory. Priority: OPENVIKING_DATA_DIR, else ./.openviking"""
-    env_dir = os.environ.get("OPENVIKING_DATA_DIR")
-    if env_dir:
-        return Path(env_dir)
-    return get_repo_root() / ".openviking"
-
-
-def get_config_file() -> Optional[str]:
-    """Get config file path from OPENVIKING_CONFIG_FILE env var."""
-    return os.environ.get("OPENVIKING_CONFIG_FILE")
 
 
 def get_root_uri_file() -> Path:
@@ -52,40 +45,65 @@ def save_root_uri(uri: str, path: Optional[Path] = None) -> None:
     path.write_text(uri)
 
 
-def new_client():
-    """Create and initialize SyncOpenViking client (embedded mode)."""
-    try:
-        import openviking as ov
-    except ImportError as e:
-        raise Exception(
-            f"OpenViking SDK not installed: {e}. "
-            "Please: pip install openviking"
-        ) from e
+def setup_cli_env() -> None:
+    """
+    Setup environment for ov CLI:
+    - OPENVIKING_SERVER_URL -> generate .ovcli.env.json
+    - ovcli.conf as fallback
+    - tls-ca-bundle.pem for HTTPS
+    """
+    bundle_dir = get_bundle_dir()
+    ca_bundle = bundle_dir / "tls-ca-bundle.pem"
+    if ca_bundle.exists():
+        abs_path = str(ca_bundle.resolve())
+        os.environ["REQUESTS_CA_BUNDLE"] = abs_path
+        os.environ["SSL_CERT_FILE"] = abs_path
 
-    config = None
-    config_file = get_config_file()
-    if config_file and Path(config_file).exists():
+    url = os.environ.get("OPENVIKING_SERVER_URL")
+    if url:
+        ovcli_path = bundle_dir / ".ovcli.env.json"
+        cfg = {
+            "url": url,
+            "api_key": os.environ.get("OPENVIKING_API_KEY") or None,
+            "agent_id": None,
+            "timeout": 120.0,
+            "output": "json",
+        }
         try:
-            with open(config_file, "r", encoding="utf-8") as f:
-                config_dict = json.load(f)
-            try:
-                from openviking_cli.utils.config.open_viking_config import OpenVikingConfig
-                config = OpenVikingConfig.from_dict(config_dict)
-            except ImportError:
-                config = config_dict
-        except Exception as e:
-            print(f"Warning: Failed to load config from {config_file}: {e}", file=sys.stderr)
+            ovcli_path.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
+            os.environ["OPENVIKING_CLI_CONFIG_FILE"] = str(ovcli_path.resolve())
+        except Exception:
+            pass
+    elif (bundle_dir / "ovcli.conf").exists():
+        os.environ["OPENVIKING_CLI_CONFIG_FILE"] = str((bundle_dir / "ovcli.conf").resolve())
 
-    data_dir = get_data_dir()
+    py_bin = Path(sys.executable).parent.parent / "bin"
+    if py_bin.exists():
+        path = os.environ.get("PATH", "")
+        if str(py_bin) not in path:
+            os.environ["PATH"] = f"{py_bin}{os.pathsep}{path}"
+
+
+def _ov_command() -> List[str]:
+    """Return ov or openviking or python -m openviking."""
+    for name in ("ov", "openviking"):
+        p = shutil.which(name)
+        if p:
+            return [p]
+    return [sys.executable, "-m", "openviking"]
+
+
+def run_ov_cli(subcmd: str, args: List[str]) -> Tuple[int, str, str]:
+    """Run ov <subcmd> <args> via subprocess. Returns (returncode, stdout, stderr)."""
+    setup_cli_env()
+    cmd = _ov_command() + [subcmd] + args
     try:
-        if config is not None:
-            client = ov.SyncOpenViking(path=str(data_dir), config=config)
-        else:
-            client = ov.SyncOpenViking(path=str(data_dir))
-        client.initialize()
-        return client
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+        return result.returncode, result.stdout, result.stderr
+    except subprocess.TimeoutExpired as e:
+        return 124, "", str(e)
     except Exception as e:
-        raise Exception(f"Failed to initialize OpenViking client: {e}") from e
+        return -1, "", str(e)
 
 
 def json_print(obj: Any) -> None:
@@ -134,7 +152,7 @@ def handle_exceptions(func):
         except Exception as e:
             json_error(
                 message=str(e),
-                hint="Check ov.conf (embedding/vlm/rerank API) and OPENVIKING_DATA_DIR",
+                hint="Check ovcli.conf and OpenViking Server connectivity",
                 error_type="OpenVikingError",
             )
             sys.exit(1)

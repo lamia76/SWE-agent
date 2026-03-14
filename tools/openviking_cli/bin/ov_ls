@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-OpenViking tool: ov_ls (嵌入式模式，与 tools/openviking 相同)
+OpenViking CLI tool: ov_ls (通过 ov ls 连接 Server)
 """
 
 import argparse
@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
-from ov_common import new_client, json_print, handle_exceptions
+from ov_common import json_error, handle_exceptions, run_ov_cli
 
 
 @handle_exceptions
@@ -19,19 +19,23 @@ def main():
     parser.add_argument("--recursive", action="store_true", help="Recursive list")
     args = parser.parse_args()
 
-    client = new_client()
-    try:
-        vfs = getattr(client, "viking_fs", client)
-        kwargs = {}
-        if args.simple:
-            kwargs["simple"] = True
-        if args.recursive:
-            kwargs["recursive"] = True
-        fn = getattr(vfs, "ls", None) or getattr(client, "ls", None)
-        result = (fn(args.uri, **kwargs) if kwargs else fn(args.uri)) if fn else vfs.list_dir(args.uri, **kwargs)
-        json_print(result if isinstance(result, (dict, list)) else {"entries": result})
-    finally:
-        client.close()
+    cli_args = [args.uri]
+    if args.simple:
+        cli_args.append("--simple")
+    if args.recursive:
+        cli_args.append("--recursive")
+
+    code, stdout, stderr = run_ov_cli("ls", cli_args)
+    if code != 0:
+        if stderr:
+            sys.stderr.write(stderr)
+        json_error(
+            message=f"ov ls failed (exit {code})",
+            hint="Check URI and ovcli.conf",
+            error_type="OpenVikingError",
+        )
+        sys.exit(1)
+    print(stdout, end="")
 
 
 if __name__ == "__main__":

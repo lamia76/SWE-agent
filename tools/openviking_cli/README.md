@@ -1,25 +1,25 @@
-# OpenViking Tool Bundle for SWE-agent（嵌入式模式）
+# OpenViking CLI Tool Bundle for SWE-agent
 
-与 **tools/openviking** 相同逻辑：使用 SyncOpenViking SDK **本地嵌入式调用**，无需远程 Server。配置 **ov.conf** 中的 embedding/vlm/rerank API 地址即可。
+通过 **ov 命令** 连接已部署的 OpenViking Server（HTTP）。模型在他处部署，**配置 ovcli.conf 的 url 即可调用**。
 
 ## 配置（仅本目录）
 
 | 文件 | 说明 |
 |------|------|
-| **ov.conf** | 与 tools/openviking 格式相同：embedding、vlm、rerank、storage、parsers 等。 |
+| **ovcli.conf** | `url`（OpenViking Server 地址，如 http://host:8090）、`api_key`（可选） |
 
 ## 功能与工具列表
 
-与 tools/openviking 相同的 8 个工具（签名一致）：
+与 tools/openviking 相同的 8 个工具（通过 ov 命令调用 Server）：
 
-1. **ov_index_repo** - 索引仓库
-2. **ov_wait** - 等待处理完成
-3. **ov_find** - 语义搜索
-4. **ov_abstract** - 极简摘要 L0
-5. **ov_overview** - 结构化概览 L1
-6. **ov_read** - 完整内容 L2
-7. **ov_ls** - 列出目录
-8. **ov_glob** - 按模式查找
+1. **ov_index_repo** - ov add-resource
+2. **ov_wait** - ov system wait
+3. **ov_find** - ov find
+4. **ov_abstract** - ov abstract (L0)
+5. **ov_overview** - ov overview (L1)
+6. **ov_read** - ov read (L2)
+7. **ov_ls** - ov ls
+8. **ov_glob** - ov glob
 
 ## 安装
 
@@ -28,17 +28,15 @@ cd SWE-agent/tools/openviking_cli
 ./install.sh
 ```
 
-安装脚本会：安装 OpenViking SDK、设置 `OPENVIKING_CONFIG_FILE` 指向 ov.conf、`OPENVIKING_DATA_DIR`、PATH。若存在 `tls-ca-bundle.pem` 则设置证书环境变量。
+安装会：安装 OpenViking SDK、设置 `OPENVIKING_CLI_CONFIG_FILE` 指向 ovcli.conf、PATH、可选 TLS 证书。
 
-## 配置（仅改本目录 ov.conf）
+## 配置
 
-编辑 **tools/openviking_cli/ov.conf**，配置：
+编辑 **ovcli.conf**：
+- **url**：OpenViking Server 的 HTTP 地址（如 `http://141.61.16.3:8090`）
+- **api_key**：若 Server 启用了鉴权则填写
 
-- **embedding.dense**：`api_base`、`api_key`、`model` 等（向量化服务）
-- **vlm**：`api_base`、`api_key`、`model` 等（摘要生成）
-- **rerank**：可选，用于搜索重排序
-
-与 tools/openviking 使用同一套模型接口（如 8002、10193 等）。
+或设置环境变量 `OPENVIKING_SERVER_URL`（优先于 ovcli.conf）。
 
 ## 快速开始
 
@@ -58,17 +56,12 @@ tool_bundles:
   - openviking_cli
 ```
 
-确保已执行 `./install.sh`，并按需编辑 **ov.conf** 中的 embedding/vlm/rerank API。
+确保已执行 `./install.sh`，并配置 **ovcli.conf** 的 url。
 
 ## 证书（HTTPS/自签名 CA）
 
-将 **tls-ca-bundle.pem** 放在本目录下，embedding/vlm 使用 HTTPS 自签名时 install 会自动设置证书。详见 `RUN_WITH_SSL_CERT.md`。
+将 **tls-ca-bundle.pem** 放在本目录，install 会自动设置证书环境变量。详见 `RUN_WITH_SSL_CERT.md`。
 
 ## 故障排除
 
-- **OpenViking SDK 未安装**：执行 `./install.sh`。
-- **初始化失败**：检查 **ov.conf** 的 embedding/vlm api_base 与网络；HTTPS 自签名时配置 tls-ca-bundle.pem。
-
-## 许可证
-
-与 SWE-agent、tools/openviking 一致；OpenViking 见 https://github.com/volcengine/OpenViking 。
+- **连接失败**：检查 ovcli.conf 的 url 与网络；HTTPS 自签名时配置 tls-ca-bundle.pem。
