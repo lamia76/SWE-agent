@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Copyright (c) 2026 OpenViking-SWE-Agent Integration
 # SPDX-License-Identifier: Apache-2.0
 """
@@ -50,15 +51,17 @@ def setup_cli_env() -> None:
     Setup environment for ov CLI:
     - OPENVIKING_SERVER_URL -> generate .ovcli.env.json
     - ovcli.conf as fallback
-    - tls-ca-bundle.pem for HTTPS
+    - tls-ca-bundle.pem for HTTPS（仅在未显式设置证书环境变量时作为缺省值）
     """
     bundle_dir = get_bundle_dir()
     ca_bundle = bundle_dir / "tls-ca-bundle.pem"
     if ca_bundle.exists():
         abs_path = str(ca_bundle.resolve())
-        os.environ["REQUESTS_CA_BUNDLE"] = abs_path
-        os.environ["SSL_CERT_FILE"] = abs_path
+        # 只在用户没有显式设置时才使用本地 CA bundle，避免覆盖系统/容器已有配置
+        os.environ.setdefault("REQUESTS_CA_BUNDLE", abs_path)
+        os.environ.setdefault("SSL_CERT_FILE", abs_path)
 
+    # 优先使用环境变量中的 OPENVIKING_SERVER_URL / OPENVIKING_API_KEY
     url = os.environ.get("OPENVIKING_SERVER_URL")
     if url:
         ovcli_path = bundle_dir / ".ovcli.env.json"
@@ -73,10 +76,15 @@ def setup_cli_env() -> None:
             ovcli_path.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
             os.environ["OPENVIKING_CLI_CONFIG_FILE"] = str(ovcli_path.resolve())
         except Exception:
+            # 配置文件写失败时，不影响后续通过 ovcli.conf 兜底
             pass
     elif (bundle_dir / "ovcli.conf").exists():
-        os.environ["OPENVIKING_CLI_CONFIG_FILE"] = str((bundle_dir / "ovcli.conf").resolve())
+        # 若未设置 OPENVIKING_SERVER_URL，则回退到静态 ovcli.conf
+        os.environ["OPENVIKING_CLI_CONFIG_FILE"] = str(
+            (bundle_dir / "ovcli.conf").resolve()
+        )
 
+    # 确保 Python 安装的 bin 目录在 PATH 中，方便找到 ov/openviking 可执行文件
     py_bin = Path(sys.executable).parent.parent / "bin"
     if py_bin.exists():
         path = os.environ.get("PATH", "")
@@ -152,7 +160,10 @@ def handle_exceptions(func):
         except Exception as e:
             json_error(
                 message=str(e),
-                hint="Check ovcli.conf and OpenViking Server connectivity",
+                hint=(
+                    "Check ovcli.conf, OPENVIKING_SERVER_URL, and "
+                    "OpenViking Server connectivity"
+                ),
                 error_type="OpenVikingError",
             )
             sys.exit(1)
