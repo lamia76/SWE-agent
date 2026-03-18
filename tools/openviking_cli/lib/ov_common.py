@@ -46,6 +46,21 @@ def save_root_uri(uri: str, path: Optional[Path] = None) -> None:
     path.write_text(uri)
 
 
+def get_default_uri(fallback: str = "viking://") -> str:
+    """
+    Best-effort default URI for search/glob/ls:
+    - Prefer `.openviking_root_uri` in current repo root (cwd)
+    - Fallback to `viking://`
+    """
+    try:
+        uri = load_root_uri()
+        if uri:
+            return uri
+    except Exception:
+        pass
+    return fallback
+
+
 def setup_cli_env() -> None:
     """
     Setup environment for ov CLI:

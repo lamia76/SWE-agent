@@ -8,13 +8,18 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
-from ov_common import json_error, handle_exceptions, run_ov_cli
+from ov_common import get_default_uri, json_error, handle_exceptions, run_ov_cli
 
 
 @handle_exceptions
 def main():
     parser = argparse.ArgumentParser(description="List directory contents at URI")
-    parser.add_argument("uri", nargs="?", default="viking://", help="OpenViking URI (default: viking://)")
+    parser.add_argument(
+        "uri",
+        nargs="?",
+        default=get_default_uri(),
+        help="OpenViking URI (default: .openviking_root_uri if present, else viking://)",
+    )
     parser.add_argument("--simple", action="store_true", help="Simple output")
     parser.add_argument("--recursive", action="store_true", help="Recursive list")
     args = parser.parse_args()

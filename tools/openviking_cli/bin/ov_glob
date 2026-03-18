@@ -8,14 +8,18 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
-from ov_common import json_error, handle_exceptions, run_ov_cli
+from ov_common import get_default_uri, json_error, handle_exceptions, run_ov_cli
 
 
 @handle_exceptions
 def main():
     parser = argparse.ArgumentParser(description="Find files by glob pattern")
     parser.add_argument("pattern", help="Glob pattern (e.g. **/*.py, **/test_*.py)")
-    parser.add_argument("--uri", default="viking://", help="Search scope URI (default: viking://)")
+    parser.add_argument(
+        "--uri",
+        default=get_default_uri(),
+        help="Search scope URI (default: .openviking_root_uri if present, else viking://)",
+    )
     args = parser.parse_args()
 
     cli_args = [args.pattern, "--uri", args.uri]

@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
-from ov_common import json_error, handle_exceptions, run_ov_cli
+from ov_common import get_default_uri, json_error, handle_exceptions, run_ov_cli
 
 
 @handle_exceptions
@@ -17,9 +17,14 @@ def main():
     parser.add_argument("query", help="Search query")
     parser.add_argument("-k", type=int, default=10, dest="k", help="Result count (default: 10)")
     parser.add_argument("--score-threshold", type=float, dest="threshold", help="Min relevance score (0.0-1.0)")
+    parser.add_argument(
+        "--uri",
+        default=get_default_uri(),
+        help="Target URI scope (default: .openviking_root_uri if present, else viking://)",
+    )
     args = parser.parse_args()
 
-    cli_args = [args.query, "--limit", str(args.k)]
+    cli_args = [args.query, "--limit", str(args.k), "--uri", args.uri]
     if args.threshold is not None:
         cli_args.extend(["--threshold", str(args.threshold)])
 
