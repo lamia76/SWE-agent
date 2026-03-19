@@ -121,7 +121,15 @@ def run_ov_cli(subcmd: str, args: List[str]) -> Tuple[int, str, str]:
     setup_cli_env()
     cmd = _ov_command() + [subcmd] + args
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+        # Force UTF-8 decoding to avoid mojibake caused by mismatched system locale.
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=600,
+            encoding="utf-8",
+            errors="replace",
+        )
         return result.returncode, result.stdout, result.stderr
     except subprocess.TimeoutExpired as e:
         return 124, "", str(e)
