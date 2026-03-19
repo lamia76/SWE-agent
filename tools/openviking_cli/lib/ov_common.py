@@ -5,6 +5,7 @@
 OpenViking CLI common utilities - 通过 ov 命令连接 OpenViking Server（HTTP）。
 """
 
+import codecs
 import json
 import os
 import shutil
@@ -116,21 +117,71 @@ def _ov_command() -> List[str]:
     return [sys.executable, "-m", "openviking"]
 
 
+def _decode_ov_output(
+    raw_stdout: bytes, raw_stderr: bytes
+) -> Tuple[str, str, Optional[str]]:
+    """
+    Decode ov command stdout/stderr. Uses OPENVIKING_CLI_OUTPUT_ENCODING if set,
+    else utf-8. When OPENVIKING_CLI_DEBUG_ENCODING=1, writes a diagnostic file.
+    Returns (stdout_str, stderr_str, diagnostic_path_or_None).
+    """
+    enc_name = os.environ.get("OPENVIKING_CLI_OUTPUT_ENCODING", "utf-8").strip()
+    errors = "replace"
+    try:
+        codec = codecs.lookup(enc_name)
+        enc_name = codec.name
+    except LookupError:
+        enc_name = "utf-8"
+
+    stdout_str = raw_stdout.decode(enc_name, errors=errors)
+    stderr_str = raw_stderr.decode(enc_name, errors=errors)
+
+    diag_path = None
+    if os.environ.get("OPENVIKING_CLI_DEBUG_ENCODING", "").strip() in ("1", "true", "yes"):
+        try:
+            diag_path = os.environ.get(
+                "OPENVIKING_CLI_DEBUG_ENCODING_FILE",
+                "/tmp/ov_encoding_diagnostic.txt",
+            )
+            with open(diag_path, "w", encoding="utf-8") as f:
+                f.write("=== OpenViking CLI encoding diagnostic ===\n\n")
+                f.write(f"Used decoding: {enc_name} (errors={errors})\n")
+                f.write(f"OPENVIKING_CLI_OUTPUT_ENCODING={os.environ.get('OPENVIKING_CLI_OUTPUT_ENCODING', '')!r}\n\n")
+                sample = raw_stdout[:500]
+                f.write("--- First 500 bytes of stdout (hex) ---\n")
+                f.write(sample.hex() + "\n\n")
+                f.write("--- First 500 bytes of stdout (repr) ---\n")
+                f.write(repr(sample) + "\n\n")
+                for label, enc in [("utf-8", "utf-8"), ("latin-1", "latin-1"), ("cp1252", "cp1252")]:
+                    try:
+                        s = raw_stdout[:500].decode(enc, errors="replace")
+                        f.write(f"--- Decoded with {enc} (first 300 chars repr) ---\n")
+                        f.write(repr(s[:300]) + "\n\n")
+                    except Exception as e:
+                        f.write(f"--- {enc} decode error: {e}\n\n")
+                f.write("--- End diagnostic ---\n")
+        except Exception:
+            pass
+    return stdout_str, stderr_str, diag_path
+
+
 def run_ov_cli(subcmd: str, args: List[str]) -> Tuple[int, str, str]:
     """Run ov <subcmd> <args> via subprocess. Returns (returncode, stdout, stderr)."""
     setup_cli_env()
     cmd = _ov_command() + [subcmd] + args
     try:
-        # Force UTF-8 decoding to avoid mojibake caused by mismatched system locale.
+        # Capture raw bytes so we can control decoding (avoid locale-dependent mojibake).
         result = subprocess.run(
             cmd,
             capture_output=True,
-            text=True,
             timeout=600,
-            encoding="utf-8",
-            errors="replace",
         )
-        return result.returncode, result.stdout, result.stderr
+        raw_stdout = result.stdout or b""
+        raw_stderr = result.stderr or b""
+        stdout_str, stderr_str, diag_path = _decode_ov_output(raw_stdout, raw_stderr)
+        if diag_path:
+            sys.stderr.write(f"[ov_common] Encoding diagnostic written to: {diag_path}\n")
+        return result.returncode, stdout_str, stderr_str
     except subprocess.TimeoutExpired as e:
         return 124, "", str(e)
     except Exception as e:
