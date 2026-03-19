@@ -8,6 +8,7 @@ OpenViking CLI common utilities - 通过 ov 命令连接 OpenViking Server（HTT
 import codecs
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -45,6 +46,38 @@ def save_root_uri(uri: str, path: Optional[Path] = None) -> None:
         path = get_root_uri_file()
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(uri)
+
+
+def parse_root_uri_from_ov_table(stdout: str) -> Optional[str]:
+    """
+    Parse root_uri from ov add-resource (or similar) human-readable table output.
+
+    When ov is not configured with output=json, stdout looks like::
+
+        status       success
+        root_uri     viking://resources/upload_...
+
+    json.loads would fail; without this parser, .openviking_root_uri is never written
+    and ov_find keeps using viking://.
+    """
+    if not stdout or not stdout.strip():
+        return None
+    for line in stdout.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        # Key is first word; value may be separated by spaces/tabs
+        parts = stripped.split(None, 1)
+        if len(parts) == 2 and parts[0].lower() == "root_uri":
+            uri = parts[1].strip()
+            if uri.startswith("viking://"):
+                return uri
+    m = re.search(r"(?im)^\s*root_uri\s+(\S+)\s*$", stdout)
+    if m:
+        uri = m.group(1).strip()
+        if uri.startswith("viking://"):
+            return uri
+    return None
 
 
 def get_default_uri(fallback: str = "viking://") -> str:

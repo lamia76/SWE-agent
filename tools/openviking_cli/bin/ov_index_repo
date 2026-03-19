@@ -9,7 +9,14 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
-from ov_common import save_root_uri, json_print, json_error, handle_exceptions, run_ov_cli
+from ov_common import (
+    json_error,
+    json_print,
+    parse_root_uri_from_ov_table,
+    run_ov_cli,
+    save_root_uri,
+    handle_exceptions,
+)
 
 
 @handle_exceptions
@@ -50,10 +57,10 @@ def main():
         result = json.loads(stdout) if stdout.strip() else {}
     except json.JSONDecodeError:
         result = {}
-        if stdout:
-            print(stdout)
 
     root_uri = result.get("root_uri") if isinstance(result, dict) else None
+    if not root_uri and stdout:
+        root_uri = parse_root_uri_from_ov_table(stdout)
     if root_uri:
         # 优先把 root_uri 写到被索引仓库根目录下的 .openviking_root_uri，
         # 这样后续在该仓库内执行 ov_find/ov_glob/ov_ls 时可以自动读取。

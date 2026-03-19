@@ -19,12 +19,13 @@ def main():
     parser.add_argument("--score-threshold", type=float, dest="threshold", help="Min relevance score (0.0-1.0)")
     parser.add_argument(
         "--uri",
-        default=get_default_uri(),
+        default=None,
         help="Target URI scope (default: .openviking_root_uri if present, else viking://)",
     )
     args = parser.parse_args()
+    uri = args.uri if args.uri else get_default_uri()
 
-    cli_args = [args.query, "--limit", str(args.k), "--uri", args.uri]
+    cli_args = [args.query, "--limit", str(args.k), "--uri", uri]
     if args.threshold is not None:
         cli_args.extend(["--threshold", str(args.threshold)])
 

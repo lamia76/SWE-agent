@@ -17,12 +17,13 @@ def main():
     parser.add_argument("pattern", help="Glob pattern (e.g. **/*.py, **/test_*.py)")
     parser.add_argument(
         "--uri",
-        default=get_default_uri(),
+        default=None,
         help="Search scope URI (default: .openviking_root_uri if present, else viking://)",
     )
     args = parser.parse_args()
+    uri = args.uri if args.uri else get_default_uri()
 
-    cli_args = [args.pattern, "--uri", args.uri]
+    cli_args = [args.pattern, "--uri", uri]
     code, stdout, stderr = run_ov_cli("glob", cli_args)
     if code != 0:
         if stderr:
