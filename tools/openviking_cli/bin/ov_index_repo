@@ -55,7 +55,13 @@ def main():
 
     root_uri = result.get("root_uri") if isinstance(result, dict) else None
     if root_uri:
-        save_root_uri(root_uri)
+        # 优先把 root_uri 写到被索引仓库根目录下的 .openviking_root_uri，
+        # 这样后续在该仓库内执行 ov_find/ov_glob/ov_ls 时可以自动读取。
+        try:
+            save_root_uri(root_uri, path=repo_path / ".openviking_root_uri")
+        except Exception:
+            # 回退：如果写入指定路径失败，再尝试使用当前工作目录
+            save_root_uri(root_uri)
         json_print({
             "root_uri": root_uri,
             "indexed_path": str(repo_path),
