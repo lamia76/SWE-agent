@@ -2,7 +2,7 @@
 tools:
   ov_index_repo:
     signature: "ov_index_repo <repo_path>"
-    docstring: "索引目标仓库到OpenViking数据库，用于语义搜索。首次使用时必须执行此命令，后续添加大量新文件后也应重新索引。索引进度完成后，可以使用ov_find进行语义搜索。需配置 ovcli.conf 的 url 指向已部署的 OpenViking Server。"
+    docstring: "索引目标仓库到OpenViking数据库，用于语义搜索。首次使用时必须执行此命令，后续添加大量新文件后也应重新索引。成功注册资源后会默认等待服务端后台处理完成（与 ov_wait 相同），否则紧接着 ov_find 常出现 total 0。需配置 ovcli.conf 的 url。若确需仅上传不等待，可设置环境变量 OPENVIKING_INDEX_SKIP_WAIT=1，但之后必须先 ov_wait 再 ov_find。"
     arguments:
       - name: repo_path
         type: string
@@ -22,7 +22,7 @@ tools:
 
   ov_find:
     signature: "ov_find <query> [<k>] [<score-threshold>]"
-    docstring: "在索引的仓库中进行语义搜索，查找相关的文件或目录。使用该工具之前必须确保已经调用过ov_index_repo对目标仓库进行索引。返回结果包含URI和相关性分数。建议对前3-5个结果使用ov_abstract快速判断相关性，再使用ov_overview或ov_read深入查看。"
+    docstring: "在索引的仓库中进行语义搜索，查找相关的文件或目录。使用前须已 ov_index_repo（默认会等待处理完成）。若 total 为 0，先执行 ov_wait 或稍后再搜。返回结果含 URI 与分数；可对前几条用 ov_abstract / ov_overview / ov_read 深入查看。"
     arguments:
       - name: query
         type: string

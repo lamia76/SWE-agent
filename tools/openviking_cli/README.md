@@ -43,7 +43,7 @@ cd SWE-agent/tools/openviking_cli
 ```bash
 ./install.sh
 ov_index_repo .
-ov_wait
+# 默认会在 add-resource 成功后自动执行 ov system wait，一般无需再单独 ov_wait
 ov_find "authentication error" -k 5
 ov_abstract viking://path/to/file.py
 ov_read viking://path/to/file.py --max-chars 16000
@@ -65,3 +65,4 @@ tool_bundles:
 ## 故障排除
 
 - **连接失败**：检查 ovcli.conf 的 url 与网络；HTTPS 自签名时配置 tls-ca-bundle.pem。
+- **`ov_find` 立刻返回 total 0**：多为索引后后台队列（向量化等）尚未完成。`ov_index_repo` 默认会等待 `ov system wait`；若使用 `--no-wait` / `OPENVIKING_INDEX_SKIP_WAIT=1`，请在搜索前执行 **`ov_wait`**，或稍后再试。
