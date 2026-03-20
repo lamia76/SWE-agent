@@ -42,7 +42,7 @@ agent:
       I've already taken care of all changes to any of the test files described in the <pr_description>. This means you DON'T have to modify the testing logic or any of the tests in any way!
       Your task is to make the minimal changes to non-tests files in the {{working_dir}} directory to ensure the <pr_description> is satisfied.
       Follow these steps to resolve the issue:
-      1. As a first step, find and read code relevant to the <pr_description>. Use ov_find for semantic search and ov_abstract/ov_overview/ov_read for content. If needed, run `ov_index_repo {{working_dir}}` then `ov_wait` to index the repo first (Server URL uses tools/openviking/ov.conf server.port, default 8090).
+      1. As a first step, find and read code relevant to the <pr_description>. Use ov_find for semantic search and ov_abstract/ov_overview/ov_read for content. If needed, run `ov_index_repo {{working_dir}}` then `ov_wait` to index the repo first (or use ov_index_repo with wait=true for one-shot). Server URL uses tools/openviking/ov.conf server.port, default 8090.
       2. Create a script to reproduce the error: first write the script to a file (e.g. with a write/edit tool or `cat > filename.py << 'EOF'` ...), then run it with `python <filename.py>` using the bash tool to confirm the error.
       3. Edit the sourcecode of the repo to resolve the issue
       4. Rerun your reproduce script and confirm that the error is fixed!
