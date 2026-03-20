@@ -32,21 +32,21 @@ def main():
         default=".",
         help="Path to repository directory (default: current directory)",
     )
-    default_wait = int(os.environ.get("OPENVIKING_INDEX_WAIT_TIMEOUT", "300"))
+    default_wait = int(os.environ.get("OPENVIKING_INDEX_WAIT_TIMEOUT", "120"))
+    parser.add_argument(
+        "--wait",
+        action="store_true",
+        help="After add-resource, run ov system wait for queue to finish (ov_find works immediately; default: skip to avoid long blocks)",
+    )
     parser.add_argument(
         "--wait-timeout",
         type=int,
         default=default_wait,
         metavar="SEC",
         help=(
-            "After add-resource, wait for server queue (ov system wait), seconds "
+            "When --wait: max seconds for ov system wait "
             f"(default: {default_wait} or OPENVIKING_INDEX_WAIT_TIMEOUT)"
         ),
-    )
-    parser.add_argument(
-        "--no-wait",
-        action="store_true",
-        help="Skip ov system wait (not recommended: ov_find may return 0 results until processing finishes)",
     )
     args = parser.parse_args()
     repo_path = Path(args.repo_path).expanduser().resolve()
@@ -87,11 +87,11 @@ def main():
             # 回退：如果写入指定路径失败，再尝试使用当前工作目录
             save_root_uri(root_uri)
 
-        skip_wait = args.no_wait or os.environ.get(
-            "OPENVIKING_INDEX_SKIP_WAIT", ""
+        do_wait = args.wait or os.environ.get(
+            "OPENVIKING_INDEX_WAIT", ""
         ).strip().lower() in ("1", "true", "yes")
         wait_payload = None
-        if not skip_wait:
+        if do_wait:
             wcode, wout, werr = run_ov_cli(
                 "system", ["wait", "--timeout", str(args.wait_timeout)]
             )
@@ -104,8 +104,7 @@ def main():
                         "Resource is registered but background processing may be incomplete."
                     ),
                     hint=(
-                        "Increase --wait-timeout, run `ov_wait` later, or retry `ov_find` after a delay. "
-                        "To only upload without waiting: --no-wait or OPENVIKING_INDEX_SKIP_WAIT=1."
+                        "Increase --wait-timeout, run `ov_wait` later, or retry `ov_find` after a delay."
                     ),
                     error_type="OpenVikingWaitError",
                 )
@@ -119,7 +118,7 @@ def main():
         }
         if wait_payload is not None:
             out["wait"] = wait_payload
-        elif skip_wait:
+        else:
             out["wait"] = {
                 "status": "skipped",
                 "hint": "Run ov_wait before ov_find if search returns no results.",

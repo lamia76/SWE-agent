@@ -1,14 +1,19 @@
 # CLI 方式：通过 ov 命令连接 OpenViking Server（HTTP），配置 ovcli.conf 的 url
 tools:
   ov_index_repo:
-    signature: "ov_index_repo <repo_path>"
-    docstring: "索引目标仓库到OpenViking数据库，用于语义搜索。首次使用时必须执行此命令，后续添加大量新文件后也应重新索引。成功注册资源后会默认等待服务端后台处理完成（与 ov_wait 相同），否则紧接着 ov_find 常出现 total 0。需配置 ovcli.conf 的 url。若确需仅上传不等待，可设置环境变量 OPENVIKING_INDEX_SKIP_WAIT=1，但之后必须先 ov_wait 再 ov_find。"
+    signature: "ov_index_repo <repo_path> [--wait]"
+    docstring: "索引目标仓库到OpenViking数据库，用于语义搜索。首次使用时必须执行此命令。默认只上传资源；加 --wait 会等待服务端队列完成（ov_find 立即可用）。不加 --wait 时，ov_find 前需先执行 ov_wait。需配置 ovcli.conf 的 url。"
     arguments:
       - name: repo_path
         type: string
         description: "仓库路径或 URL（如 https://github.com/owner/repo 或 . 表示当前目录）"
         required: false
         argument_format: "{{value}}"
+      - name: wait
+        type: boolean
+        description: "是否在 add-resource 后等待服务端队列完成（默认否；加 --wait 则 ov_find 立即可用）"
+        required: false
+        argument_format: "--wait"
 
   ov_wait:
     signature: "ov_wait [<timeout>]"
@@ -22,7 +27,7 @@ tools:
 
   ov_find:
     signature: "ov_find <query> [<k>] [<score-threshold>]"
-    docstring: "在索引的仓库中进行语义搜索，查找相关的文件或目录。使用前须已 ov_index_repo（默认会等待处理完成）。若 total 为 0，先执行 ov_wait 或稍后再搜。返回结果含 URI 与分数；可对前几条用 ov_abstract / ov_overview / ov_read 深入查看。"
+    docstring: "在索引的仓库中进行语义搜索。使用前须已 ov_index_repo；若未用 --wait 则需先 ov_wait。total 为 0 时执行 ov_wait 或稍后再搜。返回 URI 与分数；可用 ov_abstract / ov_overview / ov_read 深入查看。"
     arguments:
       - name: query
         type: string
