@@ -26,6 +26,13 @@ instances:
       # 部分 HTTP 库只认大写 NO_PROXY；与 no_proxy 保持一致（含 Docker 网桥 172.17.0.1）
       - -e
       - NO_PROXY=localhost,127.0.0.1,inner.corp,docker-registry.somecorp.com,141.61.11.184,141.61.16.3,141.61.16.5,172.17.0.1
+      # OpenViking timeout knobs for long indexing/wait workloads.
+      - -e
+      - OPENVIKING_HTTP_TIMEOUT=300
+      - -e
+      - OPENVIKING_WAIT_TIMEOUT=600
+      - -e
+      - OPENVIKING_SUBPROCESS_TIMEOUT=1200
 agent:
   type: default
   templates:
@@ -45,7 +52,7 @@ agent:
       I've already taken care of all changes to any of the test files described in the <pr_description>. This means you DON'T have to modify the testing logic or any of the tests in any way!
       Your task is to make the minimal changes to non-tests files in the {{working_dir}} directory to ensure the <pr_description> is satisfied.
       Follow these steps to resolve the issue:
-      1. As a first step, find and read code relevant to the <pr_description>. Use ov_find for semantic search and ov_abstract/ov_overview/ov_read for content. If needed, run `ov_index_repo {{working_dir}}` then `ov_wait` as two separate steps to index the repo (do NOT use wait=true—it blocks 2+ min and may crash). Server URL uses tools/openviking/ov.conf server.port, default 8090.
+      1. As a first step, find and read code relevant to the <pr_description>. Use ov_find for semantic search and ov_abstract/ov_overview/ov_read for content. If needed, run `ov_index_repo {{working_dir}}` then `ov_wait` as two separate steps to index the repo (do NOT use wait=true—it blocks 2+ min and may crash). OpenViking URL is in tools/openviking_cli/ovcli.conf (e.g. http://172.17.0.1:1933 when the server runs on the host).
       2. Create a script to reproduce the error: first write the script to a file (e.g. with a write/edit tool or `cat > filename.py << 'EOF'` ...), then run it with `python <filename.py>` using the bash tool to confirm the error.
       3. Edit the sourcecode of the repo to resolve the issue
       4. Rerun your reproduce script and confirm that the error is fixed!
