@@ -80,6 +80,26 @@ def parse_root_uri_from_ov_table(stdout: str) -> Optional[str]:
     return None
 
 
+def _env_float(name: str, default: float) -> float:
+    raw = os.environ.get(name, "").strip()
+    if not raw:
+        return default
+    try:
+        return float(raw)
+    except ValueError:
+        return default
+
+
+def _env_int(name: str, default: int) -> int:
+    raw = os.environ.get(name, "").strip()
+    if not raw:
+        return default
+    try:
+        return int(raw, 10)
+    except ValueError:
+        return default
+
+
 def get_default_uri(fallback: str = "viking://") -> str:
     """
     Best-effort default URI for search/glob/ls:
@@ -114,11 +134,13 @@ def setup_cli_env() -> None:
     url = os.environ.get("OPENVIKING_SERVER_URL")
     if url:
         ovcli_path = bundle_dir / ".ovcli.env.json"
+        # OPENVIKING_HTTP_TIMEOUT：ov 客户端单次 HTTP 超时（秒），索引/排队慢时可调大
+        http_timeout = _env_float("OPENVIKING_HTTP_TIMEOUT", 120.0)
         cfg = {
             "url": url,
             "api_key": os.environ.get("OPENVIKING_API_KEY") or None,
             "agent_id": None,
-            "timeout": 120.0,
+            "timeout": http_timeout,
             "output": "json",
         }
         try:
@@ -202,12 +224,16 @@ def run_ov_cli(subcmd: str, args: List[str]) -> Tuple[int, str, str]:
     """Run ov <subcmd> <args> via subprocess. Returns (returncode, stdout, stderr)."""
     setup_cli_env()
     cmd = _ov_command() + [subcmd] + args
+    # OPENVIKING_SUBPROCESS_TIMEOUT：整次子进程上限（秒），须 >= ov_wait --timeout 等
+    subproc_timeout = _env_int("OPENVIKING_SUBPROCESS_TIMEOUT", 600)
+    if subproc_timeout < 1:
+        subproc_timeout = 600
     try:
         # Capture raw bytes so we can control decoding (avoid locale-dependent mojibake).
         result = subprocess.run(
             cmd,
             capture_output=True,
-            timeout=600,
+            timeout=subproc_timeout,
         )
         raw_stdout = result.stdout or b""
         raw_stderr = result.stderr or b""

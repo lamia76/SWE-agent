@@ -38,6 +38,17 @@ cd SWE-agent/tools/openviking_cli
 
 或设置环境变量 `OPENVIKING_SERVER_URL`（优先于 ovcli.conf）。
 
+### 超时相关环境变量（可选）
+
+| 变量 | 说明 | 默认 |
+|------|------|------|
+| `OPENVIKING_HTTP_TIMEOUT` | 使用 `OPENVIKING_SERVER_URL` 生成 `.ovcli.env.json` 时，ov 客户端 HTTP 超时（秒） | `120` |
+| `OPENVIKING_SUBPROCESS_TIMEOUT` | `run_ov_cli` 子进程整次执行上限（秒），应 **≥** `ov_wait --timeout` | `600` |
+| `OPENVIKING_WAIT_TIMEOUT` | `ov_wait` 未传 `--timeout` 时的默认等待秒数 | `300` |
+| `OPENVIKING_INDEX_WAIT_TIMEOUT` | `ov_index_repo --wait` 时传给 `ov system wait` 的 `--timeout`（秒） | `120` |
+
+容器内需直连宿主机/OpenViking 时，请在 **`no_proxy` 与 `NO_PROXY`** 中同时加入网桥地址（如 `172.17.0.1`），避免走 HTTP 代理。
+
 ## 快速开始
 
 ```bash

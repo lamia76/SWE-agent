@@ -4,6 +4,7 @@ OpenViking CLI tool: ov_wait (通过 ov system wait 连接 Server)
 """
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -11,10 +12,26 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "lib"))
 from ov_common import json_print, json_error, handle_exceptions, run_ov_cli
 
 
+def _default_wait_timeout() -> int:
+    """Default seconds for ov system wait; override with OPENVIKING_WAIT_TIMEOUT."""
+    raw = os.environ.get("OPENVIKING_WAIT_TIMEOUT", "").strip()
+    if not raw:
+        return 300
+    try:
+        return max(1, int(raw, 10))
+    except ValueError:
+        return 300
+
+
 @handle_exceptions
 def main():
     parser = argparse.ArgumentParser(description="Wait for OpenViking processing to complete")
-    parser.add_argument("--timeout", type=int, default=300, help="Max wait time in seconds")
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=_default_wait_timeout(),
+        help="Max wait time in seconds (default: 300 or OPENVIKING_WAIT_TIMEOUT)",
+    )
     args = parser.parse_args()
 
     cli_args = ["--timeout", str(args.timeout)]
