@@ -39,12 +39,30 @@ def main():
     if code != 0:
         if stderr:
             sys.stderr.write(stderr)
-        json_error(
-            message=f"ov system wait failed (exit {code})",
-            hint="Check ovcli.conf and OpenViking Server",
-            error_type="OpenVikingError",
-        )
-        sys.exit(1)
+
+        # 默认“宽松失败”：只要 ov_wait 本身没挂死，就让上层 agent 继续。
+        # 需要严格模式时可设置：OPENVIKING_WAIT_STRICT=1
+        strict_raw = os.environ.get("OPENVIKING_WAIT_STRICT", "").strip().lower()
+        strict = strict_raw in ("1", "true", "yes")
+
+        err_obj: dict[str, object] = {
+            "error": {
+                "type": "OpenVikingWaitError",
+                "message": f"ov system wait failed (exit {code})",
+                "hint": "Check ovcli.conf / OpenViking Server logs / queue processing state",
+            }
+        }
+
+        if stdout and stdout.strip():
+            err_obj["debug"] = {"stdout_preview": stdout.strip()[:2000]}
+        if stderr and stderr.strip():
+            if "debug" not in err_obj:
+                err_obj["debug"] = {}
+            err_obj["debug"]["stderr_preview"] = stderr.strip()[:2000]  # type: ignore[index]
+
+        json_print(err_obj)
+        sys.exit(1 if strict else 0)
+
     json_print({"status": "ready", "message": "All operations completed successfully"})
 
 
