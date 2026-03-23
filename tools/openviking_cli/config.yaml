@@ -2,7 +2,7 @@
 tools:
   ov_index_repo:
     signature: "ov_index_repo <repo_path> [<wait>]"
-    docstring: "索引目标仓库到OpenViking数据库，用于语义搜索。首次使用时必须执行此命令。默认只上传资源（快速）；加 wait=true 会等待服务端队列完成（ov_find 立即可用）。不加 wait 时，ov_find 前需先 ov_wait。需配置 ovcli.conf 的 url。"
+    docstring: "索引目标仓库到OpenViking数据库，用于语义搜索。首次使用时必须执行此命令。默认只上传资源（快速）；ov_find 前需再执行 ov_wait。不要用 wait=true（会阻塞 2+ 分钟且可能导致 shell 崩溃）。需配置 ovcli.conf 的 url。"
     arguments:
       - name: repo_path
         type: string
@@ -11,7 +11,7 @@ tools:
         argument_format: "{{value}}"
       - name: wait
         type: boolean
-        description: "是否在 add-resource 后等待服务端队列完成（默认否；设为 true 则 ov_find 立即可用）"
+        description: "不推荐。设为 true 会阻塞 2+ 分钟等待队列，可能导致超时/崩溃。建议用 ov_index_repo 后单独执行 ov_wait。"
         required: false
         argument_format: "--wait"
 
